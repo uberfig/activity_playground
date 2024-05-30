@@ -7,3 +7,4 @@ edition = "2021"
 json-ld = "0.17.0"
 serde = { version = "1.0.203", features = ["derive"]}
 actix-web = "4"
+sqlx = { version = "0.7.4", features = ["runtime-tokio", "postgres", "macros"]}

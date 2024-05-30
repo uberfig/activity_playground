@@ -1,23 +1,19 @@
 use actix_web::{
     error::ErrorBadRequest,
     get, post,
-    web::{self},
+    web::{self, Data},
     App, HttpResponse, HttpServer, Responder, Result,
 };
 use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+
+pub struct AppState {
+    db: Pool<Postgres>,
+}
 
 #[get("/")]
 async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
-}
-
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
-}
-
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -85,18 +81,39 @@ async fn webfinger(info: web::Query<Info>) -> Result<String> {
 
 #[get("/users/{preferred_username}")]
 async fn get_actor(path: web::Path<String>) -> Result<String> {
-    let _preferred_username = path.into_inner();
-    todo!()
+    let preferred_username = path.into_inner();
+    Ok(preferred_username)
+}
+
+#[get("/@{preferred_username}")]
+async fn get_profile_page(state: Data<AppState>, path: web::Path<String>) -> Result<String> {
+    let val = sqlx::query!(
+        "INSERT INTO internal_users (password, preferredUsername) VALUES ($1, $2)",
+        "hi".to_string(),
+        "hi".to_string()
+    )
+    .execute(&state.db)
+    .await;
+
+    let preferred_username = path.into_inner();
+    Ok(preferred_username)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect("postgres://ivy:password@localhost/activityfun_dev")
+        .await
+        .expect("Error building a connection pool");
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(Data::new(AppState { db: pool.clone() }))
             .service(hello)
-            .service(echo)
             .service(webfinger)
-            .route("/hey", web::get().to(manual_hello))
+            .service(get_actor)
+            .service(get_profile_page)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
