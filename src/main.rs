@@ -1,4 +1,4 @@
-use activity_playground::{db::DbAppState, webfinger::webfinger};
+use activity_playground::{config::Config, db::DbConn, webfinger::webfinger};
 use actix_web::{
     error::ErrorBadRequest,
     get, post,
@@ -17,18 +17,20 @@ async fn hello() -> impl Responder {
 async fn get_actor(path: web::Path<String>) -> Result<HttpResponse> {
     let preferred_username = path.into_inner();
     // Ok(preferred_username)
-    Ok(HttpResponse::Ok().content_type("application/activity+json; charset=utf-8").body(r#"{"test": "hello"}"#))
+    Ok(HttpResponse::Ok()
+        .content_type("application/activity+json; charset=utf-8")
+        .body(r#"{"test": "hello"}"#))
 }
 
 #[get("/@{preferred_username}")]
-async fn get_profile_page(conn: Data<DbAppState>, path: web::Path<String>) -> Result<String> {
-    let val = sqlx::query!(
-        "INSERT INTO internal_users (password, preferredUsername) VALUES ($1, $2)",
-        "hi".to_string(),
-        "hi".to_string()
-    )
-    .execute(&conn.db)
-    .await;
+async fn get_profile_page(conn: Data<DbConn>, path: web::Path<String>) -> Result<String> {
+    // let val = sqlx::query!(
+    //     "INSERT INTO internal_users (password, preferredUsername) VALUES ($1, $2)",
+    //     "hi".to_string(),
+    //     "hi".to_string()
+    // )
+    // .execute(&conn.db)
+    // .await;
 
     let preferred_username = path.into_inner();
     Ok(preferred_username)
@@ -36,6 +38,30 @@ async fn get_profile_page(conn: Data<DbAppState>, path: web::Path<String>) -> Re
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let settings = config::Config::builder()
+        // Add in `./Settings.toml`
+        .add_source(config::File::with_name("gater_config"))
+        // Add in settings from the environment (with a prefix of APP)
+        // Eg.. `APP_DEBUG=1 ./target/app` would set the `debug` key
+        .add_source(config::Environment::default())
+        .build();
+
+    let settings = match settings {
+        Ok(x) => x,
+        Err(x) => {
+            eprintln!("{:#?}", x);
+            return Ok(());
+        }
+    };
+
+    let config = match settings.try_deserialize::<Config>() {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("{:#?}", error);
+            return Ok(());
+        }
+    };
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect("postgres://ivy:password@localhost/activityfun_dev")
@@ -44,7 +70,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(DbAppState { db: pool.clone() }))
+            .app_data(Data::new(DbConn { db: pool.clone() }))
+            .app_data(Data::new(config.to_owned()))
             .service(hello)
             .service(webfinger)
             .service(get_actor)

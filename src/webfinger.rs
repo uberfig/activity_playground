@@ -4,10 +4,11 @@ use actix_web::{
     web::{self, Data},
     App, HttpResponse, HttpServer, Responder, Result,
 };
+use config::Config;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
-use crate::db::DbAppState;
+use crate::db::DbConn;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WebfingerParseResult {
@@ -55,7 +56,11 @@ struct Info {
 }
 
 #[get("/.well-known/webfinger")]
-async fn webfinger(state: Data<DbAppState>, info: web::Query<Info>) -> Result<HttpResponse> {
+async fn webfinger(
+    state: Data<Config>,
+    conn: Data<DbConn>,
+    info: web::Query<Info>,
+) -> Result<HttpResponse> {
     let resource = info.into_inner().resource;
     let result = WebfingerQuery::parse_query(resource);
     let query = match result {
@@ -74,7 +79,9 @@ async fn webfinger(state: Data<DbAppState>, info: web::Query<Info>) -> Result<Ht
     };
 
     // Ok(HttpResponse::Ok().json(r#"{"test": "hello")"#))
-    Ok(HttpResponse::Ok().content_type("application/jrd+json; charset=utf-8").body(r#"{"test": "hello"}"#))
+    Ok(HttpResponse::Ok()
+        .content_type("application/jrd+json; charset=utf-8")
+        .body(r#"{"test": "hello"}"#))
 
     // todo!()
 }

@@ -2,9 +2,9 @@
 CREATE TABLE internal_users (
 	uid 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	password	TEXT NOT NULL, --stored with argon2
-	preferredUsername	TEXT NOT NULL UNIQUE --basically the username/login name
+	preferredUsername	TEXT NOT NULL UNIQUE, --basically the username/login name
 	type				TEXT NOT NULL DEFAULT 'Person',
-	name				TEXT,
+	name				TEXT NOT NULL,
 	summary				TEXT NOT NULL DEFAULT '',
 	inbox				TEXT NOT NULL,
 	outbox				TEXT NOT NULL,

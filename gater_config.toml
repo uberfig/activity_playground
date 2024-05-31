@@ -1,0 +1,2 @@
+database_url="postgres://ivy:password@localhost/activityfun_dev"
+instance_domain="example.com"
