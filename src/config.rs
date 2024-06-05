@@ -4,4 +4,7 @@ use serde::Deserialize;
 pub struct Config {
     pub database_url: String,
     pub instance_domain: String,
+    pub bind_address: String,
+    pub contact_email: String,
+    pub port: u16,
 }

@@ -1,0 +1,4 @@
+init and generate certs for place.ivytime.gay
+sudo certbot --nginx -d place.ivytime.gay -d www.place.ivytime.gay -v
+
+https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-debian-11

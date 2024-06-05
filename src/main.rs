@@ -38,6 +38,8 @@ async fn get_profile_page(conn: Data<DbConn>, path: web::Path<String>) -> Result
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    //----------------config file settings----------------
+
     let settings = config::Config::builder()
         // Add in `./Settings.toml`
         .add_source(config::File::with_name("gater_config"))
@@ -62,12 +64,18 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    let bind = config.bind_address.clone();
+    let port = config.port;
+
+    //-------------database ------------------
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect("postgres://ivy:password@localhost/activityfun_dev")
+        .connect(&config.database_url)
         .await
         .expect("Error building a connection pool");
 
+    //-----------------------------
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(DbConn { db: pool.clone() }))
@@ -77,7 +85,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_actor)
             .service(get_profile_page)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((bind, port))?
     .run()
     .await
 }
