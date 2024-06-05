@@ -1,21 +1,12 @@
 use actix_web::{
     error::{ErrorBadRequest, ErrorNotFound},
-    get, post,
-    web::{self, Data},
-    App, HttpResponse, HttpServer, Responder, Result,
+    get,
+    web::{self, Data}, HttpResponse, Result,
 };
-use config::Config;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
 use crate::{activitystream_objects::Actor, db::DbConn};
 
-// #[derive(Serialize, Deserialize, Debug)]
-// pub enum WebfingerParseResult {
-//     InvalidStart,
-//     MissingUsername,
-//     MissingDomain,
-// }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WebfingerQuery {
     pub has_prefix: bool,
