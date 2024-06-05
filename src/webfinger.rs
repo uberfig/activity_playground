@@ -1,5 +1,5 @@
 use actix_web::{
-    error::ErrorBadRequest,
+    error::{ErrorBadRequest, ErrorNotFound},
     get, post,
     web::{self, Data},
     App, HttpResponse, HttpServer, Responder, Result,
@@ -8,7 +8,7 @@ use config::Config;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
-use crate::db::DbConn;
+use crate::{activitystream_objects::Actor, db::DbConn};
 
 // #[derive(Serialize, Deserialize, Debug)]
 // pub enum WebfingerParseResult {
@@ -80,33 +80,44 @@ async fn webfinger(
     info: web::Query<Info>,
 ) -> Result<HttpResponse> {
     let resource = info.into_inner().resource;
-    // let state = &state.;
     let result = WebfingerQuery::parse_query(resource);
-    
+
     if let Some(x) = result.domain {
         if !x.eq_ignore_ascii_case(&state.instance_domain) {
-            return Err(ErrorBadRequest("not from this domain"))
+            return Err(ErrorBadRequest("not from this domain"));
         }
     }
-    // let query = match result {
-    //     Ok(x) => x,
-    //     Err(x) => match x {
-    //         WebfingerParseResult::InvalidStart => {
-    //             return Err(ErrorBadRequest("query does not start with acct:"))
-    //         }
-    //         WebfingerParseResult::MissingUsername => {
-    //             return Err(ErrorBadRequest("query missing PreferredUsername"))
-    //         }
-    //         WebfingerParseResult::MissingDomain => {
-    //             return Err(ErrorBadRequest("query missing domain"))
-    //         }
-    //     },
-    // };
+    let preferred_username = match result.preferred_username {
+        Some(x) => x,
+        None => return Err(ErrorBadRequest("no preferred username provided")),
+    };
 
-    // Ok(HttpResponse::Ok().json(r#"{"test": "hello")"#))
+    let val = sqlx::query!(
+        "SELECT * FROM  internal_users WHERE preferred_username = $1",
+        preferred_username
+    )
+    .fetch_optional(&conn.db)
+    .await;
+
+    let id = match val.unwrap() {
+        Some(x) => x.activitypub_actor,
+        None => {
+            return Err(ErrorNotFound("not found"));
+        }
+    };
+
+    let actor = sqlx::query_as!(
+        Actor,
+        "SELECT * FROM  activitypub_users WHERE database_id = $1",
+        id
+    )
+    .fetch_one(&conn.db)
+    .await
+    .unwrap();
+
+    let x = serde_json::to_string(&actor).unwrap();
+
     Ok(HttpResponse::Ok()
         .content_type("application/jrd+json; charset=utf-8")
-        .body(r#"{"test": "hello"}"#))
-
-    // todo!()
+        .body(x))
 }

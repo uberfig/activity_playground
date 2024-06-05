@@ -3,11 +3,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub enum ActorType {
     Person,
+    Other,
+}
+
+impl From<String> for ActorType {
+    fn from(value: String) -> Self {
+        if value.eq_ignore_ascii_case("Person") {
+            return ActorType::Person;
+        }
+        return ActorType::Other;
+    }
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Actor {
+    #[serde(skip)]
+    pub database_id: i64,
     #[serde(rename = "@context")]
     pub context: String,
     #[serde(rename = "type")]
@@ -15,6 +27,8 @@ pub struct Actor {
     pub id: String,
     pub name: String,
     pub preferred_username: String,
+    #[serde(skip)]
+    pub domain: String,
     pub summary: String,
     pub inbox: String,
     pub outbox: String,
