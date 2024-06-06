@@ -1,17 +1,27 @@
+use std::time::SystemTime;
+
 use actix_web::{
     error::ErrorNotFound,
     get,
     web::{self, Data},
     HttpResponse, Result,
 };
-use openssl::rsa::{Rsa, Padding};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
+use openssl::{
+    hash::MessageDigest,
+    pkey::{PKey, Private},
+    rsa::{Padding, Rsa},
+};
 use sqlx::query;
 
-use crate::{activitystream_objects::{Actor, PublicKey}, db::DbConn, inbox};
+use crate::{
+    activitystream_objects::{Activity, Actor, PublicKey},
+    db::DbConn,
+    inbox,
+};
 
 #[get("/users/{preferred_username}")]
 pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<HttpResponse> {
@@ -83,7 +93,11 @@ pub async fn create_internal_actor(
     let public = rsa.public_key_to_pem().unwrap();
 
     let key_id = format!("https://{tmp_domain}/users/{tmp_uname}#main-key");
-    let public_key = PublicKey { id: key_id, owner: id.clone(), public_key_pem: String::from_utf8(public).unwrap() };
+    let public_key = PublicKey {
+        id: key_id,
+        owner: id.clone(),
+        public_key_pem: String::from_utf8(public).unwrap(),
+    };
     let serialized_pub = serde_json::to_string(&public_key).unwrap();
 
     let x = query!(
@@ -136,4 +150,40 @@ pub async fn create_internal_actor(
     let _x = transaction.commit().await.unwrap();
 
     Ok(uid.unwrap().uid)
+}
+
+pub async fn post_to_inbox(
+    activity: &Activity,
+    from: &Actor,
+    to: &Actor,
+    private_key: Rsa<Private>,
+) {
+    let keypair = PKey::from_rsa(private_key).unwrap();
+
+    let document = serde_json::to_string(activity).unwrap();
+    let date = httpdate::fmt_http_date(SystemTime::now());
+
+    let host = to.domain.clone();
+    //string to be signed
+    let signed_string = format!("(request-target): post /inbox\nhost: {host}\ndate: {date}");
+    let mut signer = openssl::sign::Signer::new(MessageDigest::sha256(), &keypair).unwrap();
+    signer.update(signed_string.as_bytes()).unwrap();
+    let signature = openssl::base64::encode_block(&signer.sign_to_vec().unwrap());
+
+    let from_id = &from.id;
+    let header = format!(
+        r#"'keyId="{from_id}",headers="(request-target) host date",signature="{signature}""#
+    );
+
+    let client = reqwest::Client::new();
+    let res = client
+        .post(to.inbox.clone())
+        .header("Host", to.domain.clone())
+        .header("Date", date)
+        .header("Signature", header)
+        .body(document)
+        .send()
+        .await;
+
+    dbg!(res);
 }

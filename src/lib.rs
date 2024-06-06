@@ -1,3 +1,4 @@
+pub mod activities;
 pub mod activitystream_objects;
 pub mod actor;
 pub mod config;
