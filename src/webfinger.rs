@@ -1,7 +1,8 @@
 use actix_web::{
     error::{ErrorBadRequest, ErrorNotFound},
     get,
-    web::{self, Data}, HttpResponse, Result,
+    web::{self, Data},
+    HttpResponse, Result,
 };
 use serde::{Deserialize, Serialize};
 
@@ -84,7 +85,7 @@ async fn webfinger(
     };
 
     let val = sqlx::query!(
-        "SELECT * FROM  internal_users WHERE preferred_username = $1",
+        "SELECT activitypub_actor FROM  internal_users WHERE preferred_username = $1",
         preferred_username
     )
     .fetch_optional(&conn.db)
@@ -107,12 +108,13 @@ async fn webfinger(
 
     let preferred_uname = actor.preferred_username;
     let domain = state.instance_domain.clone();
-    
+
     let subject = format!("acct:{preferred_uname}@{domain}");
 
     let id = actor.id;
 
-    let webfinger = format!(r#"
+    let webfinger = format!(
+        r#"
 
     {{
         "subject": "{subject}",
@@ -126,13 +128,10 @@ async fn webfinger(
         ]
     }}
 
-    "#)
-    ;
+    "#
+    );
 
     Ok(HttpResponse::Ok()
         .content_type("application/jrd+json; charset=utf-8")
         .body(webfinger))
 }
-
-
-

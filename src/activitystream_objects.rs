@@ -15,12 +15,10 @@ impl From<String> for ActorType {
     }
 }
 
-
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicKey {
-    pub id: String, //https://my-example.com/actor#main-key
+    pub id: String,    //https://my-example.com/actor#main-key
     pub owner: String, //"https://my-example.com/actor"
     pub public_key_pem: String,
 }

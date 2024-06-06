@@ -1,4 +1,4 @@
-use activity_playground::{config::Config, db::DbConn, webfinger::webfinger};
+use activity_playground::{actor::get_actor, config::Config, db::DbConn, webfinger::webfinger};
 use actix_web::{
     error::ErrorBadRequest,
     get, post,
@@ -11,15 +11,6 @@ use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 #[get("/")]
 async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
-}
-
-#[get("/users/{preferred_username}")]
-async fn get_actor(path: web::Path<String>) -> Result<HttpResponse> {
-    let preferred_username = path.into_inner();
-    // Ok(preferred_username)
-    Ok(HttpResponse::Ok()
-        .content_type("application/activity+json; charset=utf-8")
-        .body(r#"{"test": "hello"}"#))
 }
 
 #[get("/@{preferred_username}")]
