@@ -14,6 +14,7 @@ serde_json = { version = "1.0.117", features = ["preserve_order"]}
 # rustls-pemfile = "2.1.2"
 
 actix-web = { version = "4" }
+rustls = "0.23.9"
 # rustls = "0.23"
 # rustls-pemfile = "2"
 # acme-rfc8555 = "0.1"

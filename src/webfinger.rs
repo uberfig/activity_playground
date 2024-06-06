@@ -97,18 +97,42 @@ async fn webfinger(
         }
     };
 
-    let actor = sqlx::query_as!(
-        Actor,
-        "SELECT * FROM  activitypub_users WHERE database_id = $1",
+    let actor = sqlx::query!(
+        "SELECT id, preferred_username FROM activitypub_users WHERE database_id = $1",
         id
     )
     .fetch_one(&conn.db)
     .await
     .unwrap();
 
-    let x = serde_json::to_string(&actor).unwrap();
+    let preferred_uname = actor.preferred_username;
+    let domain = state.instance_domain.clone();
+    
+    let subject = format!("acct:{preferred_uname}@{domain}");
+
+    let id = actor.id;
+
+    let webfinger = format!(r#"
+
+    {{
+        "subject": "{subject}",
+    
+        "links": [
+            {{
+                "rel": "self",
+                "type": "application/activity+json",
+                "href": "{id}"
+            }}
+        ]
+    }}
+
+    "#)
+    ;
 
     Ok(HttpResponse::Ok()
         .content_type("application/jrd+json; charset=utf-8")
-        .body(x))
+        .body(webfinger))
 }
+
+
+

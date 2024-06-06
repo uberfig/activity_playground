@@ -15,6 +15,29 @@ impl From<String> for ActorType {
     }
 }
 
+
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKey {
+    pub id: String, //https://my-example.com/actor#main-key
+    pub owner: String, //"https://my-example.com/actor"
+    pub public_key_pem: String,
+}
+
+impl From<String> for PublicKey {
+    fn from(value: String) -> Self {
+        serde_json::from_str(&value).unwrap()
+    }
+}
+
+// impl TryFrom<Option<String>> for PublicKey {
+//     type Error = &'static str;
+//     fn try_from(value: Option<String>) -> Result<PublicKey, Self::Error> {
+//         todo!()
+//     }
+// }
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Actor {
@@ -25,7 +48,7 @@ pub struct Actor {
     #[serde(rename = "type")]
     pub type_field: ActorType,
     pub id: String,
-    pub name: String,
+    pub name: Option<String>,
     pub preferred_username: String,
     #[serde(skip)]
     pub domain: String,
@@ -35,6 +58,8 @@ pub struct Actor {
     pub followers: String,
     pub following: String,
     pub liked: String,
+
+    pub public_key: PublicKey,
 }
 #[derive(Serialize, Deserialize)]
 pub enum ObjectType {
