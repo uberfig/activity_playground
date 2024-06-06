@@ -55,7 +55,8 @@ pub struct Actor {
     pub outbox: String,
     pub followers: String,
     pub following: String,
-    pub liked: String,
+    #[serde(skip)]
+    pub liked: Option<String>,
 
     pub public_key: PublicKey,
 }

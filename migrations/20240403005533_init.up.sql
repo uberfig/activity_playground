@@ -2,7 +2,7 @@ CREATE TABLE activitypub_users (
 	context				TEXT NOT NULL DEFAULT 'https://www.w3.org/ns/activitystreams',
 	database_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL,
-	type_field				TEXT NOT NULL DEFAULT 'Person',
+	type_field			TEXT NOT NULL DEFAULT 'Person',
 	preferred_username	TEXT NOT NULL,
 	domain				TEXT NOT NULL,
 	name				TEXT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE activitypub_users (
 	outbox				TEXT NOT NULL,
 	followers			TEXT NOT NULL,
 	following			TEXT NOT NULL,
-	liked				TEXT NOT NULL,
+	liked				TEXT NULL,
 
 	public_key			TEXT NOT NULL
 
