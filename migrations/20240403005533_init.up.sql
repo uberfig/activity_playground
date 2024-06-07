@@ -1,5 +1,4 @@
 CREATE TABLE activitypub_users (
-	context				TEXT NOT NULL DEFAULT 'https://www.w3.org/ns/activitystreams',
 	database_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL,
 	type_field			TEXT NOT NULL DEFAULT 'Person',

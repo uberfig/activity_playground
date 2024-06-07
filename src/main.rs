@@ -1,4 +1,10 @@
-use activity_playground::{actor::get_actor, config::Config, db::DbConn, webfinger::webfinger};
+use activity_playground::{
+    activities::{get_activity, get_object},
+    actor::{create_test, get_actor, post_test},
+    config::Config,
+    db::DbConn,
+    webfinger::webfinger,
+};
 use actix_web::{
     error::ErrorBadRequest,
     get, post,
@@ -67,6 +73,7 @@ async fn main() -> std::io::Result<()> {
         .expect("Error building a connection pool");
 
     //-----------------------------
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(DbConn { db: pool.clone() }))
@@ -75,6 +82,10 @@ async fn main() -> std::io::Result<()> {
             .service(webfinger)
             .service(get_actor)
             .service(get_profile_page)
+            .service(get_activity)
+            .service(get_object)
+            .service(create_test)
+            .service(post_test)
     })
     .bind((bind, port))?
     .run()

@@ -35,14 +35,65 @@ impl From<String> for PublicKey {
 //         todo!()
 //     }
 // }
-
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Actor {
     #[serde(skip)]
     pub database_id: i64,
     #[serde(rename = "@context")]
-    pub context: String,
+    pub context: Vec<String>,
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_field: ActorType,
+    #[serde(skip)]
+    pub name: Option<String>,
+    pub preferred_username: String,
+    #[serde(skip)]
+    pub domain: String,
+    #[serde(skip)]
+    pub summary: String,
+    pub inbox: String,
+    #[serde(skip)]
+    pub outbox: String,
+    #[serde(skip)]
+    pub followers: String,
+    #[serde(skip)]
+    pub following: String,
+    #[serde(skip)]
+    pub liked: Option<String>,
+
+    pub public_key: PublicKey,
+}
+
+impl From<DatabaseActor> for Actor {
+    fn from(value: DatabaseActor) -> Self {
+        Actor {
+            database_id: value.database_id,
+            context: vec![
+                "https://www.w3.org/ns/activitystreams".to_string(),
+                "https://w3id.org/security/v1".to_string(),
+            ],
+            type_field: value.type_field,
+            id: value.id,
+            name: value.name,
+            preferred_username: value.preferred_username,
+            domain: value.domain,
+            summary: value.summary,
+            inbox: value.inbox,
+            outbox: value.outbox,
+            followers: value.followers,
+            following: value.following,
+            liked: value.liked,
+            public_key: value.public_key,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseActor {
+    #[serde(skip)]
+    pub database_id: i64,
     #[serde(rename = "type")]
     pub type_field: ActorType,
     pub id: String,
@@ -71,7 +122,7 @@ pub struct StreamObject {
     pub type_field: ObjectType,
     pub id: String,
     pub attributed_to: String,
-    pub to: Vec<String>,
+    pub to: String,
     pub in_reply_to: Option<String>,
     pub content: String,
 }
@@ -96,7 +147,7 @@ pub struct Activity {
     #[serde(rename = "type")]
     pub type_field: ActivityType,
     pub id: String,
-    pub to: Vec<String>,
+    // pub to: Vec<String>,
     pub actor: String,
-    pub object: ActivityObjType,
+    pub object: StreamObject,
 }

@@ -1,10 +1,7 @@
 use std::time::SystemTime;
 
 use actix_web::{
-    error::ErrorNotFound,
-    get,
-    web::{self, Data},
-    HttpResponse, Result,
+    error::ErrorNotFound, get, http::header, web::{self, Data}, HttpResponse, Result
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -18,7 +15,8 @@ use openssl::{
 use sqlx::query;
 
 use crate::{
-    activitystream_objects::{Activity, Actor, PublicKey},
+    activities,
+    activitystream_objects::{Activity, Actor, DatabaseActor, PublicKey},
     db::DbConn,
     inbox,
 };
@@ -42,7 +40,7 @@ pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<Ht
     };
 
     let actor = sqlx::query_as!(
-        Actor,
+        DatabaseActor,
         "SELECT * FROM activitypub_users WHERE database_id = $1",
         id
     )
@@ -50,14 +48,28 @@ pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<Ht
     .await
     .unwrap();
 
+    let actor: Actor = actor.into();
+
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")
         .body(serde_json::to_string(&actor).unwrap()))
 }
 
+#[get("/create_test")]
+pub async fn create_test(
+    state: Data<crate::config::Config>,
+    conn: Data<DbConn>,
+) -> Result<HttpResponse> {
+    let x = create_internal_actor(state, conn, "test".to_string(), "test".to_string())
+        .await
+        .unwrap();
+
+    Ok(HttpResponse::Ok().body(format!("{x}")))
+}
+
 pub async fn create_internal_actor(
     state: Data<crate::config::Config>,
-    conn: &Data<DbConn>,
+    conn: Data<DbConn>,
     username: String,
     password: String,
 ) -> Result<i64, ()> {
@@ -152,10 +164,40 @@ pub async fn create_internal_actor(
     Ok(uid.unwrap().uid)
 }
 
+#[get("/post_test")]
+pub async fn post_test(
+    state: Data<crate::config::Config>,
+    conn: Data<DbConn>,
+) -> Result<HttpResponse> {
+    let activity: Activity = serde_json::from_str(activities::activity).unwrap();
+
+    let val = sqlx::query!(
+        "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
+        "test"
+    )
+    .fetch_one(&conn.db)
+    .await
+    .unwrap();
+
+    let key = openssl::rsa::Rsa::private_key_from_pem(val.private_key.as_bytes()).unwrap();
+
+    let x = post_to_inbox(
+        &activity,
+        &"https://place.ivytime.gay/users/test".to_string(),
+        &"mastodon.social".to_string(),
+        &"https://mastodon.social/inbox".to_string(),
+        key,
+    )
+    .await;
+
+    Ok(HttpResponse::Ok().body(format!("")))
+}
+
 pub async fn post_to_inbox(
     activity: &Activity,
-    from: &Actor,
-    to: &Actor,
+    from_id: &String,
+    to_domain: &String,
+    to_inbox: &String,
     private_key: Rsa<Private>,
 ) {
     let keypair = PKey::from_rsa(private_key).unwrap();
@@ -163,27 +205,45 @@ pub async fn post_to_inbox(
     let document = serde_json::to_string(activity).unwrap();
     let date = httpdate::fmt_http_date(SystemTime::now());
 
-    let host = to.domain.clone();
+
+    let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
+    hasher.update(document.as_bytes()).unwrap();
+    let digest: &[u8] = &hasher.finish().unwrap();
+
+    let digest_base64 = &openssl::base64::encode_block(digest);
+
     //string to be signed
-    let signed_string = format!("(request-target): post /inbox\nhost: {host}\ndate: {date}");
+    let signed_string = format!("(request-target): post /inbox\nhost: {to_domain}\ndate: {date}\ndigest: SHA-256={digest_base64}");
     let mut signer = openssl::sign::Signer::new(MessageDigest::sha256(), &keypair).unwrap();
     signer.update(signed_string.as_bytes()).unwrap();
     let signature = openssl::base64::encode_block(&signer.sign_to_vec().unwrap());
 
-    let from_id = &from.id;
-    let header = format!(
-        r#"'keyId="{from_id}",headers="(request-target) host date",signature="{signature}""#
-    );
+    // dbg!(&from_id);
+    
+    let header: String = r#"keyId=""#.to_string() + from_id + r#"#main-key",headers="(request-target) host date digest",signature=""# +&signature+ r#"""#;
+    // let header = format!(
+    //     r#"keyId="{from_id}",headers="(request-target) host date",signature="{signature}""#
+    // );
+
+    // println!("{}", &header);
+
+    // dbg!(&header);
 
     let client = reqwest::Client::new();
-    let res = client
-        .post(to.inbox.clone())
-        .header("Host", to.domain.clone())
+    let client = client
+        .post(to_inbox)
+        .header("Host", to_domain)
         .header("Date", date)
         .header("Signature", header)
-        .body(document)
-        .send()
-        .await;
+        .header("Digest", "SHA-256=".to_owned()+digest_base64)
+        .body(document);
 
-    dbg!(res);
+    dbg!(&client);
+
+    let res = client.send().await;
+    dbg!(&res);
+
+    let response = res.unwrap().text().await;
+
+    dbg!(response);
 }
