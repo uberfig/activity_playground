@@ -1,7 +1,11 @@
 use std::time::SystemTime;
 
 use actix_web::{
-    error::ErrorNotFound, get, http::header, web::{self, Data}, HttpResponse, Result
+    error::ErrorNotFound,
+    get,
+    http::header,
+    web::{self, Data},
+    HttpResponse, Result,
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -16,9 +20,10 @@ use sqlx::query;
 
 use crate::{
     activities,
-    activitystream_objects::{Activity, Actor, DatabaseActor, PublicKey},
+    activitystream_objects::{OldActivity, Actor, DatabaseActor, PublicKey},
     db::DbConn,
     inbox,
+    verification::generate_digest,
 };
 
 #[get("/users/{preferred_username}")]
@@ -169,7 +174,7 @@ pub async fn post_test(
     state: Data<crate::config::Config>,
     conn: Data<DbConn>,
 ) -> Result<HttpResponse> {
-    let activity: Activity = serde_json::from_str(activities::activity).unwrap();
+    let activity: OldActivity = serde_json::from_str(activities::activity).unwrap();
 
     let val = sqlx::query!(
         "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
@@ -194,7 +199,7 @@ pub async fn post_test(
 }
 
 pub async fn post_to_inbox(
-    activity: &Activity,
+    activity: &OldActivity,
     from_id: &String,
     to_domain: &String,
     to_inbox: &String,
@@ -205,12 +210,7 @@ pub async fn post_to_inbox(
     let document = serde_json::to_string(activity).unwrap();
     let date = httpdate::fmt_http_date(SystemTime::now());
 
-
-    let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
-    hasher.update(document.as_bytes()).unwrap();
-    let digest: &[u8] = &hasher.finish().unwrap();
-
-    let digest_base64 = &openssl::base64::encode_block(digest);
+    let digest_base64 = &generate_digest(document.as_bytes());
 
     //string to be signed
     let signed_string = format!("(request-target): post /inbox\nhost: {to_domain}\ndate: {date}\ndigest: SHA-256={digest_base64}");
@@ -219,8 +219,12 @@ pub async fn post_to_inbox(
     let signature = openssl::base64::encode_block(&signer.sign_to_vec().unwrap());
 
     // dbg!(&from_id);
-    
-    let header: String = r#"keyId=""#.to_string() + from_id + r#"#main-key",headers="(request-target) host date digest",signature=""# +&signature+ r#"""#;
+
+    let header: String = r#"keyId=""#.to_string()
+        + from_id
+        + r#"#main-key",headers="(request-target) host date digest",signature=""#
+        + &signature
+        + r#"""#;
     // let header = format!(
     //     r#"keyId="{from_id}",headers="(request-target) host date",signature="{signature}""#
     // );
@@ -235,7 +239,7 @@ pub async fn post_to_inbox(
         .header("Host", to_domain)
         .header("Date", date)
         .header("Signature", header)
-        .header("Digest", "SHA-256=".to_owned()+digest_base64)
+        .header("Digest", "SHA-256=".to_owned() + digest_base64)
         .body(document);
 
     dbg!(&client);

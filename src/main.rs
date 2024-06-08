@@ -1,9 +1,7 @@
+use std::sync::Mutex;
+
 use activity_playground::{
-    activities::{get_activity, get_object},
-    actor::{create_test, get_actor, post_test},
-    config::Config,
-    db::DbConn,
-    webfinger::webfinger,
+    activities::{get_activity, get_object}, activitystream_objects::{ActivityStream, Context, Object}, actor::{create_test, get_actor, post_test}, config::Config, db::DbConn, inbox::{self, inspect_inbox, private_inbox, shared_inbox, Inbox}, webfinger::webfinger
 };
 use actix_web::{
     error::ErrorBadRequest,
@@ -35,6 +33,11 @@ async fn get_profile_page(conn: Data<DbConn>, path: web::Path<String>) -> Result
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
+    // let test = ActivityStream::Object(Object { context: Context::Array(vec!["hi".to_string(), "hello".to_string()]), id: "hi".to_string(), name: "hi".to_string() });
+    // println!("{}", serde_json::to_string(&test).unwrap());
+    let deserialized:ActivityStream = serde_json::from_str(r#"{"type":"Object","@context":["hi","hello"],"id":"hi","name":"hi"}"#).unwrap();
+    dbg!(deserialized);
     //----------------config file settings----------------
 
     let settings = config::Config::builder()
@@ -74,10 +77,15 @@ async fn main() -> std::io::Result<()> {
 
     //-----------------------------
 
+    let inbox = Data::new(Inbox {
+        inbox: Mutex::new(Vec::new()),
+    });
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(DbConn { db: pool.clone() }))
             .app_data(Data::new(config.to_owned()))
+            .app_data(inbox.clone())
             .service(hello)
             .service(webfinger)
             .service(get_actor)
@@ -86,6 +94,9 @@ async fn main() -> std::io::Result<()> {
             .service(get_object)
             .service(create_test)
             .service(post_test)
+            .service(shared_inbox)
+            .service(private_inbox)
+            .service(inspect_inbox)
     })
     .bind((bind, port))?
     .run()

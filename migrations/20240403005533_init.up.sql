@@ -1,6 +1,6 @@
 CREATE TABLE activitypub_users (
 	database_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
-	id					TEXT NOT NULL,
+	id					TEXT NOT NULL UNIQUE,
 	type_field			TEXT NOT NULL DEFAULT 'Person',
 	preferred_username	TEXT NOT NULL,
 	domain				TEXT NOT NULL,
@@ -31,6 +31,26 @@ CREATE TABLE internal_users (
 	activitypub_actor	BIGINT NOT NULL REFERENCES activitypub_users(database_id) ON DELETE CASCADE,
 	private_key		TEXT NOT NULL
 );
+
+CREATE TABLE objects (
+	obj_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+
+	type_field		TEXT NOT NULL DEFAULT 'Note',
+	id				TEXT NOT NULL UNIQUE,
+	attributedTo	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	content			TEXT,
+);
+
+CREATE TABLE activities (
+	activity_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+
+	type_field		TEXT NOT NULL DEFAULT 'Create',
+	id				TEXT NOT NULL UNIQUE,
+	actor 			TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	object			TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+);
+
+
 
 -- CREATE TABLE activities (
 -- 	database_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,

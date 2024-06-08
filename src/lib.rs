@@ -5,4 +5,5 @@ pub mod config;
 pub mod db;
 pub mod inbox;
 pub mod outbox;
+pub mod verification;
 pub mod webfinger;

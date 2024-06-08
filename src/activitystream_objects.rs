@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ActorType {
     Person,
     Other,
@@ -62,6 +62,17 @@ pub struct Actor {
     #[serde(skip)]
     pub liked: Option<String>,
 
+    pub public_key: PublicKey,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+///Actor type for just deserializing the useful bits for verifying post came from an actor
+pub struct VerificationActor {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_field: ActorType,
+    pub preferred_username: String,
     pub public_key: PublicKey,
 }
 
@@ -141,7 +152,7 @@ pub enum ActivityObjType {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Activity {
+pub struct OldActivity {
     #[serde(rename = "@context")]
     pub context: String,
     #[serde(rename = "type")]
@@ -150,4 +161,128 @@ pub struct Activity {
     // pub to: Vec<String>,
     pub actor: String,
     pub object: StreamObject,
+}
+
+//--------------------new implimentaition---------------
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Object {
+    pub id: String,
+
+    pub name: Option<String>,
+    //TODO
+    pub attachment: Option<String>,
+    pub attributed_to: Option<String>,
+    pub audience: Option<String>,
+    pub content: Option<String>,
+    pub end_time: Option<String>,
+    pub generator: Option<String>,
+    pub icon: Option<String>,
+    pub image: Option<String>,
+    pub in_reply_to: Option<String>,
+    pub location: Option<String>,
+    pub preview: Option<String>,
+    pub published: Option<String>,
+    pub replies: Option<String>,
+    pub start_time: Option<String>,
+    pub summary: Option<String>,
+    pub tag: Option<String>,
+    pub updated: Option<String>,
+    pub url: Option<String>,
+    pub to: Option<String>,
+    pub bto: Option<String>,
+    pub cc: Option<String>,
+    pub bcc: Option<String>,
+    pub media_type: Option<String>,
+    pub duration: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Link {
+    pub href: String,
+    pub hreflang: Option<String>,
+    pub media_type: String,
+    pub name: String,
+    pub height: Option<u32>,
+    pub width: Option<u32>,
+    pub preview: Option<String>,//TODO
+    pub rel: Option<String>//TODO
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct IntransitiveActivity {
+    #[serde(flatten)]
+    pub extends_object: Object,
+    pub actor: Option<String>, //TODO
+    pub target: Option<String>, //TODO
+    pub result: Option<String>, //TODO
+    pub origin: Option<String>, //TODO
+    pub instrument: Option<String>, //TODO
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Activity {
+    #[serde(flatten)]
+    pub intransitive: IntransitiveActivity,
+    pub object: Option<Box<Object>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Collection {
+    #[serde(flatten)]
+    pub extends_object: Object,
+    pub total_items: u32,
+    pub current: Option<String>, //TODO
+    pub first: Option<String>, //TODO
+    pub last: Option<String>, //TODO
+    pub items: Option<String>, //TODO
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderedCollection {
+    #[serde(flatten)]
+    pub extends_collection: Collection,
+    pub part_of: Option<String>, //TODO
+    pub next: Option<String>, //TODO
+    pub prev: Option<String>, //TODO
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionPage {
+    #[serde(flatten)]
+    pub extends_collection: Collection,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Context {
+    #[serde(rename = "@context")]
+    Array(Vec<String>),
+    #[serde(rename = "@context")]
+    Single(String),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ActivityStream {
+    Object(Object),
+    Link(Link),
+    Activity(Activity),
+    IntransitiveActivity(IntransitiveActivity),
+    Collection(Collection),
+    OrderedCollection(OrderedCollection),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ContextWrap {
+    #[serde(flatten)]
+    pub context: Context,
+    #[serde(flatten)]
+    pub activity_stream: ActivityStream,
 }
