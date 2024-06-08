@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use super::activity_types::*;
 
+//-------------------glue--------------
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Context {
     #[serde(rename = "@context")]
@@ -150,15 +152,13 @@ pub struct OrderedCollectionPage {
     pub extends_collection_page: CollectionPage,
 }
 
-
 //--------------------inheritence---------------------
-
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ExtendsObject {
     Object(Object),
-    ExtendsIntransitive(ExtendsIntransitive),   
+    ExtendsIntransitive(ExtendsIntransitive),
     ExtendsCollection(ExtendsCollection),
 }
 
@@ -183,7 +183,7 @@ pub enum ExtendsActivity {
     View(View),
     Listen(Listen),
     Read(Read),
-    Move(Move),   
+    Move(Move),
     Announce(Announce),
     Flag(Flag),
     Dislike(Dislike),
@@ -215,4 +215,3 @@ pub enum ExtendsCollection {
     Collection(Collection),
     OrderedCollection(OrderedCollection),
 }
-

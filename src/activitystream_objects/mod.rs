@@ -3,7 +3,6 @@ pub mod core_types;
 
 use serde::{Deserialize, Serialize};
 
-
 //-----------old implimentation kept in this file until I get rid of it, depreciated----------------
 
 #[derive(Serialize, Deserialize, Debug)]

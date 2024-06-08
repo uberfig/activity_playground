@@ -1,7 +1,13 @@
 use std::sync::Mutex;
 
 use activity_playground::{
-    activities::{get_activity, get_object}, activitystream_objects::core_types::ActivityStream, actor::{create_test, get_actor, post_test}, config::Config, db::DbConn, inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox}, webfinger::webfinger
+    activities::{get_activity, get_object},
+    activitystream_objects::core_types::ActivityStream,
+    actor::{create_test, get_actor, post_test},
+    config::Config,
+    db::DbConn,
+    inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
+    webfinger::webfinger,
 };
 use actix_web::{
     error::ErrorBadRequest,

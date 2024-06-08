@@ -1,14 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::core_types::{Activity, IntransitiveActivity, Object};
-
-
+use super::core_types::{Activity, IntransitiveActivity};
 
 //--------------------new implimentaition---------------
-
-
-
-
 
 //--------------Extended Types---------
 
@@ -346,7 +340,7 @@ pub struct Question {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ExtendsAccept {
-    TentativeAccept(TentativeAccept),    
+    TentativeAccept(TentativeAccept),
     Accept(Accept),
 }
 
@@ -370,9 +364,3 @@ pub enum ExtendsIgnore {
     Ignore(Ignore),
     Block(Block),
 }
-
-
-
-//-------------------glue--------------
-
-
