@@ -20,7 +20,7 @@ use sqlx::query;
 
 use crate::{
     activities,
-    activitystream_objects::{OldActivity, Actor, DatabaseActor, PublicKey},
+    activitystream_objects::{Actor, DatabaseActor, OldActivity, PublicKey},
     db::DbConn,
     inbox,
     verification::generate_digest,

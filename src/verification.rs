@@ -228,7 +228,7 @@ pub async fn verify_request(
 
     let mut verifier =
         openssl::sign::Verifier::new(openssl::hash::MessageDigest::sha256(), &pubkey).unwrap();
-    let input =&comparison_string;
+    let input = &comparison_string;
     // dbg!(&input);
     // let input = input.unwrap();
     // let input = &input.into_iter().collect().unwrap();
