@@ -20,7 +20,7 @@ use sqlx::query;
 
 use crate::{
     activities,
-    activitystream_objects::{Actor, DatabaseActor, OldActivity, PublicKey},
+    activitystream_objects::{OldActor, DatabaseActor, OldActivity, PublicKey},
     db::DbConn,
     inbox,
     verification::generate_digest,
@@ -53,7 +53,7 @@ pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<Ht
     .await
     .unwrap();
 
-    let actor: Actor = actor.into();
+    let actor: OldActor = actor.into();
 
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")

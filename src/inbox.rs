@@ -14,7 +14,7 @@ use json_ld::object::value;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    activitystream_objects::{Actor, VerificationActor},
+    activitystream_objects::{OldActor, VerificationActor},
     db::DbConn,
     verification::{generate_digest, verify_request},
 };
