@@ -10,7 +10,7 @@ pub fn generate_digest(body: &[u8]) -> String {
     let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
     hasher.update(body).unwrap();
     let digest: &[u8] = &hasher.finish().unwrap();
-    
+
     //digest_base64
     openssl::base64::encode_block(digest)
 }
@@ -150,7 +150,7 @@ pub async fn verify_request(
         return Err(RequestVerificationError::NoSignatureHeaders);
     };
 
-    let Some(_date) = request_headers.get("date") else {
+    let Some(_) = request_headers.get("date") else {
         return Err(RequestVerificationError::NoDate);
     };
 

@@ -5,7 +5,8 @@ use actix_web::{
     get,
     // http::header,
     web::{self, Data},
-    HttpResponse, Result,
+    HttpResponse,
+    Result,
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
@@ -253,7 +254,6 @@ pub async fn post_to_inbox(
     let response = res.unwrap().text().await;
 
     dbg!(&response);
-    
 
     if let Ok(x) = response {
         println!("{}", x);

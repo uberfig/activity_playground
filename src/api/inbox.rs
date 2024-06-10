@@ -8,7 +8,9 @@ use actix_web::{
     http::StatusCode,
     post,
     web::{self, Data},
-    HttpRequest, HttpResponse, Result,
+    HttpRequest,
+    HttpResponse,
+    Result,
 };
 // use json_ld::object::value;
 // use serde::{Deserialize, Serialize};
@@ -85,8 +87,6 @@ pub async fn private_inbox(
                 .status(StatusCode::OK)
                 .body("OK".to_string()));
         }
-        Err(x) => {
-            Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap()))
-        }
+        Err(x) => Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap())),
     }
 }

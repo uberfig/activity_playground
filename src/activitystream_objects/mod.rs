@@ -1,5 +1,6 @@
 pub mod activity_types;
 pub mod core_types;
+pub mod actors;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,7 @@ impl From<String> for ActorType {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicKey {
     pub id: String,    //https://my-example.com/actor#main-key

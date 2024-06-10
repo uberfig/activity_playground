@@ -28,6 +28,68 @@ pub enum ActivityStream {
     LinkType(LinkType),
 }
 
+//--------------------inheritence---------------------
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ExtendsObject {
+    Object(ObjectWrapper),
+    ExtendsIntransitive(ExtendsIntransitive),
+    ExtendsCollection(ExtendsCollection),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ExtendsActivity {
+    Activity(ActivityWrapper),
+    ExtendsAccept(ExtendsAccept),
+    Add(Add),
+    Create(Create),
+    Delete(Delete),
+    Follow(Follow),
+    ExtendsIgnore(ExtendsIgnore),
+    Join(Join),
+    Leave(Leave),
+    Like(Like),
+    ExtendsOffer(ExtendsOffer),
+    ExtendsReject(ExtendsReject),
+    Remove(Remove),
+    Undo(Undo),
+    Update(Update),
+    View(View),
+    Listen(Listen),
+    Read(Read),
+    Move(Move),
+    Announce(Announce),
+    Flag(Flag),
+    Dislike(Dislike),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ExtendsIntransitive {
+    ExtendsActivity(ExtendsActivity),
+    IntransitiveActivity(IntransitiveActivityWrapper),
+    Arrive(Arrive),
+    Travel(Travel),
+    Question(Question),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ExtendsCollectionPage {
+    CollectionPage(Box<CollectionPageWrapper>),
+    OrderedCollectionPage(Box<OrderedCollectionPageWrapper>),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum ExtendsCollection {
+    Collection(Collection),
+    OrderedCollection(OrderedCollection),
+    ExtendsCollectionPage,
+}
+
 //--------------primitive-----------------
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,7 +98,7 @@ pub enum ObjectWrapper {
     Object(Object),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
     pub id: String,
@@ -226,67 +288,4 @@ pub struct OrderedCollectionPage {
     pub extends_collection_page: CollectionPage,
 }
 
-//--------------------inheritence---------------------
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum ExtendsObject {
-    Object(ObjectWrapper),
-    ExtendsIntransitive(ExtendsIntransitive),
-    ExtendsCollection(ExtendsCollection),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum ExtendsActivity {
-    Activity(ActivityWrapper),
-    ExtendsAccept(ExtendsAccept),
-    Add(Add),
-    Create(Create),
-    Delete(Delete),
-    Follow(Follow),
-    ExtendsIgnore(ExtendsIgnore),
-    Join(Join),
-    Leave(Leave),
-    Like(Like),
-    ExtendsOffer(ExtendsOffer),
-    ExtendsReject(ExtendsReject),
-    Remove(Remove),
-    Undo(Undo),
-    Update(Update),
-    View(View),
-    Listen(Listen),
-    Read(Read),
-    Move(Move),
-    Announce(Announce),
-    Flag(Flag),
-    Dislike(Dislike),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-/// all activity types
-pub enum ExtendsIntransitive {
-    ExtendsActivity(ExtendsActivity),
-    IntransitiveActivity(IntransitiveActivityWrapper),
-    Arrive(Arrive),
-    Travel(Travel),
-    Question(Question),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-/// all activity types
-pub enum ExtendsCollectionPage {
-    CollectionPage(Box<CollectionPageWrapper>),
-    OrderedCollectionPage(Box<OrderedCollectionPageWrapper>),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-/// all activity types
-pub enum ExtendsCollection {
-    Collection(Collection),
-    OrderedCollection(OrderedCollection),
-    ExtendsCollectionPage
-}

@@ -1,19 +1,17 @@
 use std::sync::Mutex;
 
 use activity_playground::{
-    activities::{get_activity, get_object},
-    activitystream_objects::core_types::ContextWrap,
-    actor::{create_test, get_actor, post_test},
-    config::Config,
-    db::DbConn,
-    inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
-    webfinger::webfinger,
+    activities::{get_activity, get_object}, activitystream_objects::core_types::ContextWrap, api::{actor::{create_test, get_actor, post_test}, inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox}, webfinger::webfinger}, config::Config, db::DbConn
 };
 use actix_web::{
     // error::ErrorBadRequest,
-    get, 
+    get,
     web::{self, Data},
-    App, HttpResponse, HttpServer, Responder, Result,
+    App,
+    HttpResponse,
+    HttpServer,
+    Responder,
+    Result,
 };
 // use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
@@ -24,7 +22,7 @@ async fn hello() -> impl Responder {
 }
 
 #[get("/@{preferred_username}")]
-async fn get_profile_page(/*conn: Data<DbConn>, */path: web::Path<String>) -> Result<String> {
+async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> Result<String> {
     // let val = sqlx::query!(
     //     "INSERT INTO internal_users (password, preferredUsername) VALUES ($1, $2)",
     //     "hi".to_string(),
