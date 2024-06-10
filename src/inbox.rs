@@ -1,8 +1,8 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::sync::Mutex;
 
 use actix_web::{
-    body,
-    cookie::{time::convert::Second, Cookie},
+    // body,
+    // cookie::{time::convert::Second, Cookie},
     error::Error,
     get,
     http::StatusCode,
@@ -10,20 +10,21 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse, Result,
 };
-use json_ld::object::value;
-use serde::{Deserialize, Serialize};
+// use json_ld::object::value;
+// use serde::{Deserialize, Serialize};
 
 use crate::{
-    activitystream_objects::{OldActor, VerificationActor},
-    db::DbConn,
-    verification::{generate_digest, verify_request},
+    // activitystream_objects::{OldActor, VerificationActor},
+    // db::DbConn,
+    // verification::{generate_digest, verify_request},
+    verification::verify_request,
 };
 pub struct Inbox {
     pub inbox: Mutex<Vec<String>>,
 }
 
 #[get("/inspect")]
-pub async fn inspect_inbox(conn: Data<DbConn>, inbox: Data<Inbox>) -> String {
+pub async fn inspect_inbox(inbox: Data<Inbox>) -> String {
     let mut guard = inbox.inbox.lock().unwrap();
     let data = &mut *guard;
 
@@ -32,7 +33,7 @@ pub async fn inspect_inbox(conn: Data<DbConn>, inbox: Data<Inbox>) -> String {
 
 #[post("/inbox")]
 pub async fn shared_inbox(
-    conn: Data<DbConn>,
+    // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
 ) -> Result<HttpResponse, Error> {
@@ -53,7 +54,7 @@ pub async fn shared_inbox(
 #[post("/users/{preferred_username}/inbox")]
 pub async fn private_inbox(
     request: HttpRequest,
-    conn: Data<DbConn>,
+    // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
 ) -> Result<HttpResponse, Error> {
@@ -85,9 +86,7 @@ pub async fn private_inbox(
                 .body("OK".to_string()));
         }
         Err(x) => {
-            return Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap()));
+            Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap()))
         }
     }
-
-    // <- send response
 }

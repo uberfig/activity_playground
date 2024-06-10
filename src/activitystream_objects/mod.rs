@@ -16,7 +16,7 @@ impl From<String> for ActorType {
         if value.eq_ignore_ascii_case("Person") {
             return ActorType::Person;
         }
-        return ActorType::Other;
+        ActorType::Other
     }
 }
 

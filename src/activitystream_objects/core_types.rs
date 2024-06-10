@@ -3,6 +3,14 @@ use serde::{Deserialize, Serialize};
 use super::activity_types::*;
 
 //-------------------glue--------------
+#[derive(Serialize, Deserialize, Debug)]
+/// wraps activitystream to include context
+pub struct ContextWrap {
+    #[serde(flatten)]
+    pub context: Context,
+    #[serde(flatten)]
+    pub activity_stream: ActivityStream,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Context {
@@ -13,53 +21,83 @@ pub enum Context {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
+#[serde(untagged)]
+// #[serde(tag = "type")]
 pub enum ActivityStream {
-    ExtendsObject(ExtendsObject),
+    ExtendsObject(Box<ExtendsObject>),
     LinkType(LinkType),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ContextWrap {
-    #[serde(flatten)]
-    pub context: Context,
-    #[serde(flatten)]
-    pub activity_stream: ActivityStream,
-}
-
 //--------------primitive-----------------
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ObjectWrapper {
+    Object(Object),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
     pub id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attachment: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attributed_to: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub audience: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub generator: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub in_reply_to: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub preview: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub published: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub replies: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub updated: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bto: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cc: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bcc: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub media_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum LinkWrapper {
+    Link(Link),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -79,18 +117,24 @@ pub struct Link {
 #[serde(untagged)]
 pub enum LinkType {
     Simple(String),
-    Expanded(Link),
+    Expanded(LinkWrapper),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
-    Object(ExtendsObject),
+    Object(Box<ExtendsObject>),
     Link(LinkType),
 }
 
 //---------------Activities--------------
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum IntransitiveActivityWrapper {
+    IntransitiveActivity(IntransitiveActivity),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -105,6 +149,12 @@ pub struct IntransitiveActivity {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ActivityWrapper {
+    Activity(Activity),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Activity {
     #[serde(flatten)]
@@ -113,6 +163,12 @@ pub struct Activity {
 }
 
 // --------------collections----------------
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum CollectionyWrapper {
+    Collection(Collection),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -127,10 +183,22 @@ pub struct Collection {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum OrderedCollectionWrapper {
+    OrderedCollection(OrderedCollection),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderedCollection {
     #[serde(flatten)]
     pub extends_collection: Collection,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum CollectionPageWrapper {
+    CollectionPage(CollectionPage),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -141,6 +209,12 @@ pub struct CollectionPage {
     pub part_of: Option<String>, //TODO
     pub next: Option<String>,    //TODO
     pub prev: Option<String>,    //TODO
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum OrderedCollectionPageWrapper {
+    OrderedCollectionPage(OrderedCollectionPage),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -157,7 +231,7 @@ pub struct OrderedCollectionPage {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ExtendsObject {
-    Object(Object),
+    Object(ObjectWrapper),
     ExtendsIntransitive(ExtendsIntransitive),
     ExtendsCollection(ExtendsCollection),
 }
@@ -165,7 +239,7 @@ pub enum ExtendsObject {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ExtendsActivity {
-    Activity(Activity),
+    Activity(ActivityWrapper),
     ExtendsAccept(ExtendsAccept),
     Add(Add),
     Create(Create),
@@ -194,7 +268,7 @@ pub enum ExtendsActivity {
 /// all activity types
 pub enum ExtendsIntransitive {
     ExtendsActivity(ExtendsActivity),
-    IntransitiveActivity(IntransitiveActivity),
+    IntransitiveActivity(IntransitiveActivityWrapper),
     Arrive(Arrive),
     Travel(Travel),
     Question(Question),
@@ -204,8 +278,8 @@ pub enum ExtendsIntransitive {
 #[serde(untagged)]
 /// all activity types
 pub enum ExtendsCollectionPage {
-    CollectionPage(CollectionPage),
-    OrderedCollectionPage(OrderedCollectionPage),
+    CollectionPage(Box<CollectionPageWrapper>),
+    OrderedCollectionPage(Box<OrderedCollectionPageWrapper>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -214,4 +288,5 @@ pub enum ExtendsCollectionPage {
 pub enum ExtendsCollection {
     Collection(Collection),
     OrderedCollection(OrderedCollection),
+    ExtendsCollectionPage
 }

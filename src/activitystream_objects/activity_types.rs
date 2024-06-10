@@ -280,7 +280,7 @@ pub struct Announce {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-///	Indicates that the actor is blocking the object.
+/// Indicates that the actor is blocking the object.
 /// Blocking is a stronger form of [`Ignore`].
 /// The typical use is to support social systems that allow one user
 /// to block activities or content of other users.

@@ -1,13 +1,12 @@
 use actix_web::{
-    error::ErrorNotFound,
     get,
-    web::{self, Data},
+    web::{self},
     HttpResponse, Result,
 };
 
-const test_user: &str = "test";
+// const TEST_USER: &str = "test";
 
-pub const activity: &str = r#"
+pub const ACTIVITY: &str = r#"
 {
 	"@context": "https://www.w3.org/ns/activitystreams",
 
@@ -27,7 +26,7 @@ pub const activity: &str = r#"
 }
 "#;
 
-const object: &str = r#"
+const OBJECT: &str = r#"
 {
 	"@context": "https://www.w3.org/ns/activitystreams",
 
@@ -44,17 +43,19 @@ const object: &str = r#"
 #[get("/users/{preferred_username}/statuses/{id}/activity")]
 pub async fn get_activity(path: web::Path<(String, u64)>) -> Result<HttpResponse> {
     let (preferred_username, id) = path.into_inner();
+    println!("get activity {preferred_username}, {id}");
 
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")
-        .body(activity))
+        .body(ACTIVITY))
 }
 
 #[get("/users/{preferred_username}/statuses/{id}")]
 pub async fn get_object(path: web::Path<(String, u64)>) -> Result<HttpResponse> {
     let (preferred_username, id) = path.into_inner();
+    println!("get object {preferred_username}, {id}");
 
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")
-        .body(object))
+        .body(OBJECT))
 }

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use activity_playground::{
     activities::{get_activity, get_object},
-    activitystream_objects::core_types::ActivityStream,
+    activitystream_objects::core_types::ContextWrap,
     actor::{create_test, get_actor, post_test},
     config::Config,
     db::DbConn,
@@ -10,13 +10,13 @@ use activity_playground::{
     webfinger::webfinger,
 };
 use actix_web::{
-    error::ErrorBadRequest,
-    get, post,
+    // error::ErrorBadRequest,
+    get, 
     web::{self, Data},
     App, HttpResponse, HttpServer, Responder, Result,
 };
-use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+// use serde::{Deserialize, Serialize};
+use sqlx::postgres::PgPoolOptions;
 
 #[get("/")]
 async fn hello() -> impl Responder {
@@ -24,7 +24,7 @@ async fn hello() -> impl Responder {
 }
 
 #[get("/@{preferred_username}")]
-async fn get_profile_page(conn: Data<DbConn>, path: web::Path<String>) -> Result<String> {
+async fn get_profile_page(/*conn: Data<DbConn>, */path: web::Path<String>) -> Result<String> {
     // let val = sqlx::query!(
     //     "INSERT INTO internal_users (password, preferredUsername) VALUES ($1, $2)",
     //     "hi".to_string(),
@@ -41,11 +41,15 @@ async fn get_profile_page(conn: Data<DbConn>, path: web::Path<String>) -> Result
 async fn main() -> std::io::Result<()> {
     // let test = ActivityStream::Object(Object { context: Context::Array(vec!["hi".to_string(), "hello".to_string()]), id: "hi".to_string(), name: "hi".to_string() });
     // println!("{}", serde_json::to_string(&test).unwrap());
-    let deserialized: ActivityStream = serde_json::from_str(
-        r#"{"type":"Object","@context":["hi","hello"],"id":"hi","name":"hi"}"#,
+    let deserialized: ContextWrap = serde_json::from_str(
+        r#"{"type":"Object","@context":["https://context1.com","https://context2.com"],"id":"hi","name":"hi"}"#,
     )
     .unwrap();
-    dbg!(deserialized);
+    dbg!(&deserialized);
+
+    let test = serde_json::to_string_pretty(&deserialized).unwrap();
+
+    println!("{test}");
     //----------------config file settings----------------
 
     let settings = config::Config::builder()

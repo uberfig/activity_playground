@@ -3,18 +3,22 @@ use std::time::SystemTime;
 use actix_web::{
     error::ErrorNotFound,
     get,
-    http::header,
+    // http::header,
     web::{self, Data},
     HttpResponse, Result,
 };
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
 };
+// use argon2::{
+//     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+//     Argon2,
+// };
 use openssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
-    rsa::{Padding, Rsa},
+    rsa::Rsa,
 };
 use sqlx::query;
 
@@ -22,7 +26,7 @@ use crate::{
     activities,
     activitystream_objects::{DatabaseActor, OldActivity, OldActor, PublicKey},
     db::DbConn,
-    inbox,
+    // inbox,
     verification::generate_digest,
 };
 
@@ -88,9 +92,8 @@ pub async fn create_internal_actor(
     .fetch_optional(&mut *transaction)
     .await;
 
-    match val.unwrap() {
-        Some(_) => return Err(()),
-        None => {}
+    if val.unwrap().is_some() {
+        return Err(());
     };
 
     let tmp_domain = &state.instance_domain;
@@ -164,17 +167,17 @@ pub async fn create_internal_actor(
     .fetch_one(&mut *transaction)
     .await;
 
-    let _x = transaction.commit().await.unwrap();
+    transaction.commit().await.unwrap();
 
     Ok(uid.unwrap().uid)
 }
 
 #[get("/post_test")]
 pub async fn post_test(
-    state: Data<crate::config::Config>,
+    // state: Data<crate::config::Config>,
     conn: Data<DbConn>,
 ) -> Result<HttpResponse> {
-    let activity: OldActivity = serde_json::from_str(activities::activity).unwrap();
+    let activity: OldActivity = serde_json::from_str(activities::ACTIVITY).unwrap();
 
     let val = sqlx::query!(
         "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
@@ -186,7 +189,7 @@ pub async fn post_test(
 
     let key = openssl::rsa::Rsa::private_key_from_pem(val.private_key.as_bytes()).unwrap();
 
-    let x = post_to_inbox(
+    post_to_inbox(
         &activity,
         &"https://place.ivytime.gay/users/test".to_string(),
         &"mastodon.social".to_string(),
@@ -195,7 +198,7 @@ pub async fn post_test(
     )
     .await;
 
-    Ok(HttpResponse::Ok().body(format!("")))
+    Ok(HttpResponse::Ok().body(""))
 }
 
 pub async fn post_to_inbox(
@@ -249,5 +252,10 @@ pub async fn post_to_inbox(
 
     let response = res.unwrap().text().await;
 
-    dbg!(response);
+    dbg!(&response);
+    
+
+    if let Ok(x) = response {
+        println!("{}", x);
+    }
 }

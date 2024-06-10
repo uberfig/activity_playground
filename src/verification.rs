@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use actix_web::{http::StatusCode, test, web, Error, HttpRequest, HttpResponse};
+use actix_web::{web, HttpRequest};
 use openssl::hash::MessageDigest;
 use serde::{Deserialize, Serialize};
 
@@ -10,9 +10,9 @@ pub fn generate_digest(body: &[u8]) -> String {
     let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
     hasher.update(body).unwrap();
     let digest: &[u8] = &hasher.finish().unwrap();
-    let digest_base64 = openssl::base64::encode_block(digest);
-
-    digest_base64
+    
+    //digest_base64
+    openssl::base64::encode_block(digest)
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -80,9 +80,9 @@ pub async fn verify_request(
     };
 
     let signature_header: HashMap<String, String> = signature_header
-        .split(",")
+        .split(',')
         .filter_map(|pair| {
-            pair.split_once("=").map(|(key, value)| {
+            pair.split_once('=').map(|(key, value)| {
                 (
                     key.replace("/[^A-Za-z]/", ""),
                     value.replace("/[^A-Za-z]/", ""),
@@ -95,13 +95,13 @@ pub async fn verify_request(
         // return Ok(HttpResponse::Unauthorized().body("no signature key id provided"));
         return Err(RequestVerificationError::NoSignatureKey);
     };
-    let key_id = key_id.replace("\"", "");
+    let key_id = key_id.replace('"', "");
 
     let Some(signature) = signature_header.get("signature") else {
         // return Ok(HttpResponse::Unauthorized().body("no signature provided in signature header"));
         return Err(RequestVerificationError::NoSignature);
     };
-    let signature = signature.replace("\"", "");
+    let signature = signature.replace('"', "");
 
     dbg!(&signature);
 
@@ -150,7 +150,7 @@ pub async fn verify_request(
         return Err(RequestVerificationError::NoSignatureHeaders);
     };
 
-    let Some(date) = request_headers.get("date") else {
+    let Some(_date) = request_headers.get("date") else {
         return Err(RequestVerificationError::NoDate);
     };
 
@@ -160,8 +160,8 @@ pub async fn verify_request(
     // let comparison_string= format!("(request-target): post /inbox\nhost: {instance_domain}\ndate: {date}\ndigest: SHA-256={digest}");
 
     let comparison_string: Vec<String> = headers
-        .replace("\"", "")
-        .split(" ")
+        .replace('"', "")
+        .split(' ')
         .map(|signed_header_name| {
             // if signed_header_name.eq("(request-target)") {
             //     format!("(request-target): post {path}")

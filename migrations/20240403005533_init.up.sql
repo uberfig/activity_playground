@@ -38,19 +38,21 @@ CREATE TABLE objects (
 	type_field		TEXT NOT NULL DEFAULT 'Note',
 	id				TEXT NOT NULL UNIQUE,
 	attributedTo	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
-	content			TEXT,
+	content			TEXT
 );
 
-CREATE TABLE activities (
-	activity_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+-- CREATE TABLE activities (
+-- 	activity_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 
-	type_field		TEXT NOT NULL DEFAULT 'Create',
-	id				TEXT NOT NULL UNIQUE,
-	actor 			TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
-	object			TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
-);
+-- 	type_field		TEXT NOT NULL DEFAULT 'Create',
+-- 	id				TEXT NOT NULL UNIQUE,
+-- 	actor 			TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+-- 	object			TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE
+-- );
 
-
+CREATE TABLE objects (
+	object_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE
+)
 
 -- CREATE TABLE activities (
 -- 	database_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
