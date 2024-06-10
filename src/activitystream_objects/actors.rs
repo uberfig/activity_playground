@@ -21,6 +21,11 @@ pub struct PublicKey {
     pub owner: String, //"https://my-example.com/actor"
     pub public_key_pem: String,
 }
+impl From<String> for PublicKey {
+    fn from(value: String) -> Self {
+        serde_json::from_str(&value).unwrap()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]

@@ -1,7 +1,9 @@
 pub mod activity_types;
 pub mod core_types;
 pub mod actors;
+pub mod object_and_link_types;
 
+use actors::PublicKey;
 use serde::{Deserialize, Serialize};
 
 //-----------old implimentation kept in this file until I get rid of it, depreciated----------------
@@ -21,19 +23,15 @@ impl From<String> for ActorType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PublicKey {
-    pub id: String,    //https://my-example.com/actor#main-key
-    pub owner: String, //"https://my-example.com/actor"
-    pub public_key_pem: String,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// pub struct PublicKey {
+//     pub id: String,    //https://my-example.com/actor#main-key
+//     pub owner: String, //"https://my-example.com/actor"
+//     pub public_key_pem: String,
+// }
 
-impl From<String> for PublicKey {
-    fn from(value: String) -> Self {
-        serde_json::from_str(&value).unwrap()
-    }
-}
+
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
