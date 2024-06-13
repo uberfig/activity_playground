@@ -1,6 +1,6 @@
 pub mod activity_types;
-pub mod core_types;
 pub mod actors;
+pub mod core_types;
 pub mod object_and_link_types;
 
 use actors::PublicKey;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 //-----------old implimentation kept in this file until I get rid of it, depreciated----------------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ActorType {
     Person,
     Other,
@@ -30,8 +30,6 @@ impl From<String> for ActorType {
 //     pub owner: String, //"https://my-example.com/actor"
 //     pub public_key_pem: String,
 // }
-
-
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,7 +61,7 @@ pub struct OldActor {
     pub public_key: PublicKey,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 ///Actor type for just deserializing the useful bits for verifying post came from an actor
 pub struct VerificationActor {

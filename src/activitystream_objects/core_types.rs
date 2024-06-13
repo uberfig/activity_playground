@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use super::activity_types::*;
 
 //-------------------glue--------------
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 /// wraps activitystream to include context
 pub struct ContextWrap {
     #[serde(flatten)]
@@ -12,7 +13,7 @@ pub struct ContextWrap {
     pub activity_stream: ActivityStream,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Context {
     #[serde(rename = "@context")]
     Array(Vec<String>),
@@ -20,7 +21,7 @@ pub enum Context {
     Single(String),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 // #[serde(tag = "type")]
 pub enum ActivityStream {
@@ -30,7 +31,7 @@ pub enum ActivityStream {
 
 //--------------------inheritence---------------------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsObject {
     Object(ObjectWrapper),
@@ -38,7 +39,7 @@ pub enum ExtendsObject {
     ExtendsCollection(ExtendsCollection),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsActivity {
     Activity(ActivityWrapper),
@@ -65,7 +66,7 @@ pub enum ExtendsActivity {
     Dislike(Dislike),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsIntransitive {
     ExtendsActivity(ExtendsActivity),
@@ -75,14 +76,14 @@ pub enum ExtendsIntransitive {
     Question(Question),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsCollectionPage {
     CollectionPage(Box<CollectionPageWrapper>),
     OrderedCollectionPage(Box<OrderedCollectionPageWrapper>),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsCollection {
     Collection(Collection),
@@ -92,7 +93,7 @@ pub enum ExtendsCollection {
 
 //--------------primitive-----------------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum ObjectWrapper {
     Object(Object),
@@ -156,16 +157,16 @@ pub struct Object {
     pub duration: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum LinkWrapper {
     Link(Link),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Link {
-    pub href: String,
+    pub href: Url,
     pub hreflang: Option<String>,
     pub media_type: String,
     pub name: String,
@@ -175,14 +176,14 @@ pub struct Link {
     pub rel: Option<String>,     //TODO
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum LinkType {
-    Simple(String),
+    Simple(Url),
     Expanded(LinkWrapper),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
@@ -192,13 +193,13 @@ pub enum RangeLinkObject {
 
 //---------------Activities--------------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum IntransitiveActivityWrapper {
     IntransitiveActivity(IntransitiveActivity),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct IntransitiveActivity {
     #[serde(flatten)]
@@ -210,13 +211,13 @@ pub struct IntransitiveActivity {
     pub instrument: Option<String>, //TODO
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum ActivityWrapper {
     Activity(Activity),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Activity {
     #[serde(flatten)]
@@ -226,13 +227,13 @@ pub struct Activity {
 
 // --------------collections----------------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum CollectionyWrapper {
     Collection(Collection),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Collection {
     #[serde(flatten)]
@@ -244,26 +245,26 @@ pub struct Collection {
     pub items: Option<String>,   //TODO
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum OrderedCollectionWrapper {
     OrderedCollection(OrderedCollection),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderedCollection {
     #[serde(flatten)]
     pub extends_collection: Collection,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum CollectionPageWrapper {
     CollectionPage(CollectionPage),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CollectionPage {
     #[serde(flatten)]
@@ -273,13 +274,13 @@ pub struct CollectionPage {
     pub prev: Option<String>,    //TODO
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum OrderedCollectionPageWrapper {
     OrderedCollectionPage(OrderedCollectionPage),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderedCollectionPage {
     #[serde(flatten)]
@@ -287,5 +288,3 @@ pub struct OrderedCollectionPage {
     #[serde(flatten)]
     pub extends_collection_page: CollectionPage,
 }
-
-

@@ -1,5 +1,5 @@
 CREATE TABLE activitypub_users (
-	database_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+	ap_user_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL UNIQUE,
 	type_field			TEXT NOT NULL DEFAULT 'Person',
 	preferred_username	TEXT NOT NULL,
@@ -28,11 +28,11 @@ CREATE TABLE internal_users (
 	uid 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	password	TEXT NOT NULL, --stored with argon2
 	preferred_username	TEXT NOT NULL UNIQUE, --basically the username/login name
-	activitypub_actor	BIGINT NOT NULL REFERENCES activitypub_users(database_id) ON DELETE CASCADE,
+	activitypub_actor	BIGINT NOT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE,
 	private_key		TEXT NOT NULL
 );
 
-CREATE TABLE objects (
+CREATE TABLE activity_objects (
 	obj_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 
 	type_field		TEXT NOT NULL DEFAULT 'Note',
@@ -41,27 +41,11 @@ CREATE TABLE objects (
 	content			TEXT
 );
 
--- CREATE TABLE activities (
--- 	activity_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
-
--- 	type_field		TEXT NOT NULL DEFAULT 'Create',
--- 	id				TEXT NOT NULL UNIQUE,
--- 	actor 			TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
--- 	object			TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE
--- );
-
 CREATE TABLE objects (
-	object_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE
+	id			TEXT PRIMARY KEY NOT NULL UNIQUE,
+	type		TEXT NOT NULL,
+
+	ap_user_id	BIGINT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE,
+	obj_id	BIGINT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE
 )
-
--- CREATE TABLE activities (
--- 	database_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
--- 	owner_id			BIGINT NOT NULL REFERENCES activitypub_users(database_id) ON DELETE CASCADE,
-
-
--- 	id					TEXT NOT NULL,
--- 	type				TEXT NOT NULL,
--- 	actor				TEXT NOT NULL,
--- 	published			
--- );
 

@@ -6,7 +6,7 @@ use super::core_types::{Activity, IntransitiveActivity};
 
 //--------------Extended Types---------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor accepts the object. The target property
 /// can be used in certain circumstances to indicate the context into
@@ -18,7 +18,7 @@ pub struct Accept {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A specialization of [`Accept`] indicating that the acceptance is tentative.
 ///
@@ -28,7 +28,7 @@ pub struct TentativeAccept {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has added the object to the target.
 /// If the target property is not explicitly specified, the target
@@ -41,7 +41,7 @@ pub struct Add {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// An [`IntransitiveActivity`] that indicates that the actor has
 /// arrived at the location. The origin can be used to identify the
@@ -54,7 +54,7 @@ pub struct Arrive {
     pub extends_intransitive: IntransitiveActivity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has created the object.
 ///
@@ -64,7 +64,7 @@ pub struct Create {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has deleted the object. If specified,
 /// the origin indicates the context from which the object was deleted.
@@ -75,7 +75,7 @@ pub struct Delete {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is "following" the object. Following
 /// is defined in the sense typically used within Social systems in
@@ -88,7 +88,7 @@ pub struct Follow {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is ignoring the object.
 /// The target and origin typically have no defined meaning.
@@ -99,7 +99,7 @@ pub struct Ignore {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has joined the object.
 /// The target and origin typically have no defined meaning.
@@ -110,7 +110,7 @@ pub struct Join {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has left the object.
 /// The target and origin typically have no defined meaning.
@@ -121,7 +121,7 @@ pub struct Leave {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor likes, recommends or endorses the object.
 /// The target and origin typically have no defined meaning.
@@ -132,7 +132,7 @@ pub struct Like {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is offering the object.
 /// If specified, the target indicates the entity to which the object is being offered.
@@ -143,7 +143,7 @@ pub struct Offer {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A specialization of [`Offer`] in which the actor is extending an invitation for the object to the target.
 ///
@@ -153,7 +153,7 @@ pub struct Invite {
     pub extends_offer: Offer,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is rejecting the object.
 /// The target and origin typically have no defined meaning.
@@ -164,7 +164,7 @@ pub struct Reject {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// A specialization of [`Reject`] in which the rejection is considered tentative.
 ///
@@ -174,7 +174,7 @@ pub struct TentativeReject {
     pub extends_reject: Reject,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is removing the object.
 /// If specified, the origin indicates the context from which the object is being removed.
@@ -185,7 +185,7 @@ pub struct Remove {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is undoing the object. In most cases,
 /// the object will be an [`Activity`] describing some previously performed action (for instance,
@@ -200,7 +200,7 @@ pub struct Undo {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has updated the object.
 /// Note, however, that this vocabulary does not define a mechanism for
@@ -214,7 +214,7 @@ pub struct Update {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has viewed the object.
 ///
@@ -224,7 +224,7 @@ pub struct View {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has listened to the object.
 ///
@@ -234,7 +234,7 @@ pub struct Listen {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has read the object.
 ///
@@ -244,7 +244,7 @@ pub struct Read {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor has moved object from origin to target.
 /// If the origin or target are not specified, either can be determined by context.
@@ -255,7 +255,7 @@ pub struct Move {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is traveling to target from origin.
 /// Travel is an IntransitiveObject whose actor specifies the direct object.
@@ -267,7 +267,7 @@ pub struct Travel {
     pub extends_intransitive: IntransitiveActivity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is calling the target's attention the object.
 /// The origin typically has no defined meaning.
@@ -278,7 +278,7 @@ pub struct Announce {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is blocking the object.
 /// Blocking is a stronger form of [`Ignore`].
@@ -292,7 +292,7 @@ pub struct Block {
     pub extends_ignore: Ignore,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor is "flagging" the object.
 /// Flagging is defined in the sense common to many social platforms
@@ -304,7 +304,7 @@ pub struct Flag {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Indicates that the actor dislikes the object.
 ///
@@ -314,7 +314,7 @@ pub struct Dislike {
     pub extends_activity: Activity,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 /// Represents a question being asked.
 /// Question objects are an extension of [`IntransitiveActivity`]. That is,
@@ -337,28 +337,28 @@ pub struct Question {
 
 //-------------inheritance heiarchy-------
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsAccept {
     TentativeAccept(TentativeAccept),
     Accept(Accept),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsOffer {
     Offer(Offer),
     Invite(Invite),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsReject {
     Reject(Reject),
     TentativeReject(TentativeReject),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsIgnore {
     Ignore(Ignore),
