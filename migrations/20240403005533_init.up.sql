@@ -37,7 +37,14 @@ CREATE TABLE activity_objects (
 
 	type_field		TEXT NOT NULL DEFAULT 'Note',
 	id				TEXT NOT NULL UNIQUE,
-	attributedTo	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+
+	name			TEXT NULL,
+	attachment
+	attributedTo	TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	
+	actor 			TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	published		BIGINT
+
 	content			TEXT
 );
 

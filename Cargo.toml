@@ -20,6 +20,7 @@ openssl = "0.10.64"
 httpdate = "1.0.3"
 reqwest = "0.12.4"
 url = {version = "2.5.1", features = ["serde"]}
+xsd-types = {version = "0.9.4", features = ["serde"]}
 # rustls = "0.23"
 # rustls-pemfile = "2"
 # acme-rfc8555 = "0.1"

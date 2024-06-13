@@ -75,7 +75,7 @@ pub struct VerificationActor {
 impl From<DatabaseActor> for OldActor {
     fn from(value: DatabaseActor) -> Self {
         OldActor {
-            database_id: value.database_id,
+            database_id: value.ap_user_id,
             context: vec![
                 "https://www.w3.org/ns/activitystreams".to_string(),
                 "https://w3id.org/security/v1".to_string(),
@@ -100,7 +100,7 @@ impl From<DatabaseActor> for OldActor {
 #[serde(rename_all = "camelCase")]
 pub struct DatabaseActor {
     #[serde(skip)]
-    pub database_id: i64,
+    pub ap_user_id: i64,
     #[serde(rename = "type")]
     pub type_field: ActorType,
     pub id: String,

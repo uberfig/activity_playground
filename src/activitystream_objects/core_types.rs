@@ -26,7 +26,7 @@ pub enum Context {
 // #[serde(tag = "type")]
 pub enum ActivityStream {
     ExtendsObject(Box<ExtendsObject>),
-    LinkType(LinkType),
+    LinkType(Box<LinkType>),
 }
 
 //--------------------inheritence---------------------
@@ -92,6 +92,27 @@ pub enum ExtendsCollection {
 }
 
 //--------------primitive-----------------
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum MediaType {
+    #[serde(rename = "text/html")]
+    Html,
+    #[serde(rename = "text/markdown")]
+    Markdown,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum LinkOrArray {
+    Single(LinkType),
+    Multiple(Vec<LinkType>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum RangeLinkObjOrArray {
+    Single(RangeLinkObject),
+    Multiple(Vec<RangeLinkObject>),
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
@@ -110,49 +131,78 @@ pub struct Object {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachment: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub attributed_to: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub audience: Option<String>,
+    pub attributed_to: Option<Box<ExtendsObject>>,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub audience: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_time: Option<String>,
+    pub media_type: Option<MediaType>,
+
+    
+
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Identifies the entity (e.g. an application) that generated the object
     pub generator: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+
+    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub in_reply_to: Option<String>,
+    pub in_reply_to: Option<RangeLinkObject>,
+
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub location: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub location: Option<String>,
+    pub preview: Option<RangeLinkObject>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview: Option<String>,
+    pub published: Option<xsd_types::DateTime>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub published: Option<String>,
+    pub replies: Option<Box<ExtendsCollection>>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub replies: Option<String>,
+    pub start_time: Option<xsd_types::DateTime>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_time: Option<String>,
+    pub end_time: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tag: Option<String>,
+    pub tag: Option<RangeLinkObjOrArray>,
+
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<String>,
+    pub updated: Option<xsd_types::DateTime>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>,
+    pub url: Option<LinkOrArray>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<String>,
+    pub to: Option<RangeLinkObjOrArray>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub bto: Option<String>,
+    /// Identifies an Object that is part of the private primary audience of this Object.
+    pub bto: Option<RangeLinkObjOrArray>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cc: Option<String>,
+    /// Identifies an Object that is part of the public secondary audience of this Object. 
+    pub cc: Option<RangeLinkObjOrArray>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Identifies one or more Objects that are part of the private secondary audience of this Object. 
     pub bcc: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub media_type: Option<String>,
+    
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
 }
@@ -188,7 +238,7 @@ pub enum LinkType {
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
     Object(Box<ExtendsObject>),
-    Link(LinkType),
+    Link(Box<LinkType>),
 }
 
 //---------------Activities--------------

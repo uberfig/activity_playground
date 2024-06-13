@@ -36,6 +36,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "url",
+ "xsd-types",
 ]
 
 [[package]]
@@ -3948,6 +3949,7 @@ dependencies = [
  "once_cell",
  "ordered-float",
  "pretty_dtoa",
+ "serde",
  "static-iref",
  "static-regular-grammar 2.0.1",
  "thiserror",

@@ -99,7 +99,7 @@ async fn webfinger(
     };
 
     let actor = sqlx::query!(
-        "SELECT id, preferred_username FROM activitypub_users WHERE database_id = $1",
+        "SELECT id, preferred_username FROM activitypub_users WHERE ap_user_id = $1",
         id
     )
     .fetch_one(&conn.db)

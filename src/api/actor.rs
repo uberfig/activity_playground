@@ -51,7 +51,7 @@ pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<Ht
 
     let actor = sqlx::query_as!(
         DatabaseActor,
-        "SELECT * FROM activitypub_users WHERE database_id = $1",
+        "SELECT * FROM activitypub_users WHERE ap_user_id = $1",
         id
     )
     .fetch_one(&conn.db)
@@ -126,7 +126,7 @@ pub async fn create_internal_actor(
             (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
-        RETURNING database_id
+        RETURNING ap_user_id
         "#,
         id,
         &username,
@@ -141,7 +141,7 @@ pub async fn create_internal_actor(
     .fetch_one(&mut *transaction)
     .await;
 
-    let actor = x.unwrap().database_id;
+    let actor = x.unwrap().ap_user_id;
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
