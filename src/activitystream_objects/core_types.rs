@@ -3,14 +3,20 @@ use url::Url;
 
 use super::activity_types::*;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ActivityStream {
+    #[serde(flatten)]
+    content: ContextWrap,
+}
+
 //-------------------glue--------------
 #[derive(Serialize, Deserialize, Debug, Clone)]
-/// wraps activitystream to include context
+/// wraps base object to include context
 pub struct ContextWrap {
     #[serde(flatten)]
     pub context: Context,
     #[serde(flatten)]
-    pub activity_stream: ActivityStream,
+    pub activity_stream: RangeLinkObject,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -21,13 +27,12 @@ pub enum Context {
     Single(String),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-// #[serde(tag = "type")]
-pub enum ActivityStream {
-    ExtendsObject(Box<ExtendsObject>),
-    LinkType(Box<LinkType>),
-}
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// #[serde(untagged)]
+// pub enum ActivityStream {
+//     ExtendsObject(Box<ExtendsObject>),
+//     LinkType(Box<LinkType>),
+// }
 
 //--------------------inheritence---------------------
 

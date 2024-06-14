@@ -16,13 +16,14 @@ pub struct DbConn {
 
 pub async fn get_actor_id_from_internal<'e, 'c: 'e, E>(
     executor: E,
+    username: &str,
 ) -> Result<Option<i64>, sqlx::Error>
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
     let val = sqlx::query!(
         "SELECT activitypub_actor FROM  internal_users WHERE preferred_username = $1",
-        "test"
+        username
     )
     .fetch_optional(executor)
     .await;
@@ -37,15 +38,10 @@ where
 
 pub async fn insert_into_ap_users<'e, 'c: 'e, E>(
     executor: E,
-    id: &str,
     username: &str,
     domain: &str,
-    inbox: &str,
-    outbox: &str,
-    followers: &str,
-    following: &str,
-    liked: &str,
     serialized_pub: &str,
+    links: &UserLinks,
 ) -> Result<i64, sqlx::Error>
 where
     E: 'e + sqlx::PgExecutor<'c>,
@@ -57,14 +53,14 @@ where
             ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
         RETURNING ap_user_id
         "#,
-        id,
+        links.id,
         username,
         domain,
-        inbox,
-        outbox,
-        followers,
-        following,
-        liked,
+        links.inbox,
+        links.outbox,
+        links.followers,
+        links.following,
+        links.liked,
         serialized_pub
     )
     .fetch_one(executor)
@@ -78,54 +74,44 @@ where
 
 pub async fn insert_into_local_users<'e, 'c: 'e, E>(
     executor: E,
-    id: &str,
+    pass: &str,
     username: &str,
-    domain: &str,
-    inbox: &str,
-    outbox: &str,
-    followers: &str,
-    following: &str,
-    liked: &str,
-    serialized_pub: &str,
+    actor: i64,
+    private_key: &str,
 ) -> Result<i64, sqlx::Error>
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
     let val = query!(
-        r#"INSERT INTO activitypub_users 
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
+        r#"INSERT INTO internal_users 
+            (password, preferred_username, activitypub_actor, private_key )
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
-        RETURNING ap_user_id
+            ($1, $2, $3, $4)
+        RETURNING uid
         "#,
-        id,
-        username,
-        domain,
-        inbox,
-        outbox,
-        followers,
-        following,
-        liked,
-        serialized_pub
+        pass,
+        &username,
+        actor,
+        private_key
     )
     .fetch_one(executor)
     .await;
 
     match val {
-        Ok(x) => Ok(x.ap_user_id),
+        Ok(x) => Ok(x.uid),
         Err(x) => Err(x),
     }
 }
 
 pub async fn get_private_key(conn: &Data<DbConn>, userid: i64) {}
 
-struct UserLinks {
-    id: String,
-    inbox: String,
-    outbox: String,
-    followers: String,
-    following: String,
-    liked: String,
+pub struct UserLinks {
+    pub id: String,
+    pub inbox: String,
+    pub outbox: String,
+    pub followers: String,
+    pub following: String,
+    pub liked: String,
 }
 
 fn generate_links(domain: &str, uname: &str) -> UserLinks {
@@ -148,7 +134,7 @@ pub async fn create_internal_actor(
     let mut transaction = conn.db.begin().await.unwrap();
 
     //confirm that the username is not taken
-    let val = get_actor_id_from_internal(&mut *transaction).await;
+    let val = get_actor_id_from_internal(&mut *transaction, "test").await;
 
     if val.unwrap().is_some() {
         return Err(());
@@ -178,15 +164,10 @@ pub async fn create_internal_actor(
 
     let x = insert_into_ap_users(
         &mut *transaction,
-        &links.id,
         &username,
         &state.instance_domain,
-        &links.inbox,
-        &links.outbox,
-        &links.followers,
-        &links.following,
-        &links.liked,
         &serialized_pub,
+        &links,
     )
     .await;
 
@@ -202,22 +183,9 @@ pub async fn create_internal_actor(
 
     let pass = password_hash.unwrap().to_string();
 
-    let uid = query!(
-        r#"INSERT INTO internal_users 
-            (password, preferred_username, activitypub_actor, private_key )
-        VALUES
-            ($1, $2, $3, $4)
-        RETURNING uid
-        "#,
-        pass,
-        &username,
-        actor,
-        private_key
-    )
-    .fetch_one(&mut *transaction)
-    .await;
+    let uid = insert_into_local_users(&mut *transaction, &pass, &username, actor, &private_key).await;
 
     transaction.commit().await.unwrap();
 
-    Ok(uid.unwrap().uid)
+    Ok(uid.unwrap())
 }
