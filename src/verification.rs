@@ -90,6 +90,7 @@ pub async fn verify_request(
         return Err(RequestVerificationError::NoSignatureKey);
     };
     let key_id = key_id.replace('"', "");
+    println!("key id: \n{}\n\n", &key_id);
 
     let Some(signature) = signature_header.get("signature") else {
         return Err(RequestVerificationError::NoSignature);
@@ -111,8 +112,10 @@ pub async fn verify_request(
         return Err(RequestVerificationError::ActorFetchBodyFailed);
     };
 
+    println!("\nline 115:\n{}\n\n", String::from_utf8(actor.to_vec()).unwrap());
     let actor: Result<VerificationActor, _> = serde_json::from_slice(&actor);
     let Ok(actor) = actor else {
+        dbg!(&actor);
         return Err(RequestVerificationError::ActorDeserializeFailed);
     };
 
@@ -135,16 +138,10 @@ pub async fn verify_request(
         .split(' ')
         .filter_map(|signed_header_name| {
             match signed_header_name {
-                "(request-target)" => {
-                    Some(format!("(request-target): post {path}"))
-                }
-                "host" => {
-                    Some(format!("host: {instance_domain}"))
-                }
+                "(request-target)" => Some(format!("(request-target): post {path}")),
+                "host" => Some(format!("host: {instance_domain}")),
                 _ => {
-
-                    let Some(value) = request_headers
-                    .get(signed_header_name) else {
+                    let Some(value) = request_headers.get(signed_header_name) else {
                         // return Err(RequestVerificationError::MissingSignedHeaderField(signed_header_name.to_owned());
                         return None;
                     };
@@ -159,8 +156,8 @@ pub async fn verify_request(
                     .unwrap();
                     let x = format!("{signed_header_name}: {value}",);
                     dbg!(&x);
-                    // x
-                    todo!()
+                    Some(x)
+                    // todo!()
                 }
             }
         })

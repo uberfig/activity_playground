@@ -75,10 +75,14 @@ pub async fn private_inbox(
 
     let x = verify_request(request, body, "/users/test/inbox", "place.ivytime.gay").await;
 
-    dbg!(&x);
+    
+
 
     match x {
         Ok(x) => {
+
+            println!("{}", &x);
+
             let mut guard = inbox.inbox.lock().unwrap();
             let data = &mut *guard;
             data.push(x);
@@ -87,6 +91,9 @@ pub async fn private_inbox(
                 .status(StatusCode::OK)
                 .body("OK".to_string()));
         }
-        Err(x) => Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap())),
+        Err(x) => {
+            dbg!(&x);
+            Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap()))
+        },
     }
 }

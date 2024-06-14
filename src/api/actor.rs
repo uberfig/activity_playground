@@ -1,12 +1,7 @@
 use std::time::SystemTime;
 
 use actix_web::{
-    error::ErrorNotFound,
-    get,
-    // http::header,
-    web::{self, Data},
-    HttpResponse,
-    Result,
+    error::ErrorNotFound, get, web::{self, Data}, HttpRequest, HttpResponse, Result
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
@@ -32,7 +27,17 @@ use crate::{
 };
 
 #[get("/users/{preferred_username}")]
-pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>) -> Result<HttpResponse> {
+pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>, request: HttpRequest, body: web::Bytes) -> Result<HttpResponse> {
+
+    println!("getting the actor");
+
+    dbg!(request);
+    dbg!(&body);
+    dbg!(String::from_utf8(body.to_vec()));
+
+
+
+
     let preferred_username = path.into_inner();
 
     let val = sqlx::query!(
@@ -70,7 +75,7 @@ pub async fn create_test(
     state: Data<crate::config::Config>,
     conn: Data<DbConn>,
 ) -> Result<HttpResponse> {
-    let x = create_internal_actor(state, conn, "test".to_string(), "test".to_string())
+    let x = create_internal_actor(state, conn, "hello".to_string(), "hello".to_string())
         .await
         .unwrap();
 

@@ -134,14 +134,11 @@ pub struct Object {
     pub attributed_to: Option<Box<ExtendsObject>>,
     // #[serde(skip_serializing_if = "Option::is_none")]
     // pub audience: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media_type: Option<MediaType>,
-
-    
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Identifies the entity (e.g. an application) that generated the object
@@ -149,8 +146,6 @@ pub struct Object {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-
-    
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
@@ -160,7 +155,6 @@ pub struct Object {
 
     // #[serde(skip_serializing_if = "Option::is_none")]
     // pub location: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preview: Option<RangeLinkObject>,
 
@@ -181,7 +175,6 @@ pub struct Object {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<RangeLinkObjOrArray>,
 
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated: Option<xsd_types::DateTime>,
 
@@ -196,13 +189,13 @@ pub struct Object {
     pub bto: Option<RangeLinkObjOrArray>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies an Object that is part of the public secondary audience of this Object. 
+    /// Identifies an Object that is part of the public secondary audience of this Object.
     pub cc: Option<RangeLinkObjOrArray>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies one or more Objects that are part of the private secondary audience of this Object. 
+    /// Identifies one or more Objects that are part of the private secondary audience of this Object.
     pub bcc: Option<String>,
-    
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
 }

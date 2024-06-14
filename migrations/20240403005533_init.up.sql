@@ -32,6 +32,10 @@ CREATE TABLE internal_users (
 	private_key		TEXT NOT NULL
 );
 
+CREATE TABLE files (
+	file_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE
+);
+
 CREATE TABLE activity_objects (
 	obj_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 
@@ -39,13 +43,22 @@ CREATE TABLE activity_objects (
 	id				TEXT NOT NULL UNIQUE,
 
 	name			TEXT NULL,
-	attachment
+	-- attachment
 	attributedTo	TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
 	
 	actor 			TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
-	published		BIGINT
+	published		BIGINT,
 
 	content			TEXT
+);
+
+CREATE TABLE attachments (
+	obj_id			BIGINT NOT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE,
+	attach_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+	type_field		TEXT NOT NULL DEFAULT 'Image',
+	content			TEXT NULL,
+	url				TEXT NULL,
+	file_id			BIGINT NOT NULL REFERENCES files(file_id) ON DELETE CASCADE
 );
 
 CREATE TABLE objects (
@@ -54,5 +67,5 @@ CREATE TABLE objects (
 
 	ap_user_id	BIGINT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE,
 	obj_id	BIGINT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE
-)
+);
 

@@ -31,18 +31,12 @@ pub async fn get_local_object(id: Url) -> ContextWrap {
 }
 
 pub async fn get_object(id: Url, cache: &Cache) -> ContextWrap {
-
-
     let cached = {
         let read_lock = cache.fetch.read().unwrap();
         read_lock.get(id.as_str()).cloned()
     };
 
-    if let Some(x) = cached {
-        
-    } 
-
-    
+    if let Some(x) = cached {}
 
     let client = reqwest::Client::new();
     let client = client.get(id).header("accept", "application/activity+json");
@@ -56,7 +50,6 @@ pub async fn get_object(id: Url, cache: &Cache) -> ContextWrap {
 }
 
 pub async fn fetch_object(id: Url, test_config: &String, cache: &Cache) -> ContextWrap {
-
     if let Some(x) = id.domain() {
         if x.eq_ignore_ascii_case(test_config) {
             return get_local_object(id).await;
