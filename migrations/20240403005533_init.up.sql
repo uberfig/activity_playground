@@ -10,9 +10,9 @@ CREATE TABLE activitypub_users (
 	outbox				TEXT NOT NULL,
 	followers			TEXT NOT NULL,
 	following			TEXT NOT NULL,
-	liked				TEXT NULL,
+	liked				TEXT NULL
 
-	public_key			TEXT NOT NULL
+	-- public_key			TEXT NOT NULL
 
 	-- featured			TEXT,
 	-- featuredTags		TEXT,
@@ -22,6 +22,13 @@ CREATE TABLE activitypub_users (
 	-- indexable			BOOLEAN,
 	-- memorial			BOOLEAN
 
+);
+
+CREATE TABLE public_keys (
+	pub_key_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+	id					TEXT NOT NULL UNIQUE,
+	owner				TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	public_key_pem		TEXT NOT NULL
 );
 
 CREATE TABLE internal_users (

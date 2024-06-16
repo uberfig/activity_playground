@@ -26,6 +26,16 @@ pub struct Cache {
     pub fetch: RwLock<HashMap<String, CachedItem<ContextWrap>>>, //cache of objects being fetched
 }
 
+impl Cache {
+    pub fn new() -> Cache {
+        Cache {
+            domains: RwLock::new(HashMap::new()),
+            outgoing_cache: RwLock::new(HashMap::new()),
+            fetch: RwLock::new(HashMap::new()),
+        }
+    }
+}
+
 pub async fn get_local_object(id: Url) -> ContextWrap {
     todo!()
 }

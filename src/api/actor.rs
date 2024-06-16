@@ -1,7 +1,10 @@
 use std::time::SystemTime;
 
 use actix_web::{
-    error::ErrorNotFound, get, web::{self, Data}, HttpRequest, HttpResponse, Result
+    error::ErrorNotFound,
+    get,
+    web::{self, Data},
+    HttpRequest, HttpResponse, Result,
 };
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
@@ -21,34 +24,40 @@ use sqlx::query;
 use crate::{
     activities,
     activitystream_objects::{actors::PublicKey, DatabaseActor, OldActivity, OldActor},
-    db::DbConn,
+    db::{create_internal_actor, get_actor_id_from_internal, DbConn},
     // inbox,
     verification::generate_digest,
 };
 
-#[get("/users/{preferred_username}")]
-pub async fn get_actor(path: web::Path<String>, conn: Data<DbConn>, request: HttpRequest, body: web::Bytes) -> Result<HttpResponse> {
+#[get("/actor")]
+pub async fn get_instance_actor(
+    path: web::Path<String>,
+    conn: Data<DbConn>,
+    request: HttpRequest,
+    body: web::Bytes,
+) -> Result<HttpResponse> {
+    todo!()
+}
 
+#[get("/users/{preferred_username}")]
+pub async fn get_actor(
+    path: web::Path<String>,
+    conn: Data<DbConn>,
+    request: HttpRequest,
+    body: web::Bytes,
+) -> Result<HttpResponse> {
     println!("getting the actor");
 
     dbg!(request);
     dbg!(&body);
     dbg!(String::from_utf8(body.to_vec()));
 
-
-
-
     let preferred_username = path.into_inner();
 
-    let val = sqlx::query!(
-        "SELECT activitypub_actor FROM  internal_users WHERE preferred_username = $1",
-        preferred_username
-    )
-    .fetch_optional(&conn.db)
-    .await;
+    let val = get_actor_id_from_internal(&conn.db, &preferred_username).await;
 
     let id = match val.unwrap() {
-        Some(x) => x.activitypub_actor,
+        Some(x) => x,
         None => {
             return Err(ErrorNotFound(r#"{"error":"Not Found"}"#));
         }
@@ -80,102 +89,6 @@ pub async fn create_test(
         .unwrap();
 
     Ok(HttpResponse::Ok().body(format!("{x}")))
-}
-
-pub async fn create_internal_actor(
-    state: Data<crate::config::Config>,
-    conn: Data<DbConn>,
-    username: String,
-    password: String,
-) -> Result<i64, ()> {
-    let mut transaction = conn.db.begin().await.unwrap();
-
-    //confirm that the username is not taken
-    let val = sqlx::query!(
-        "SELECT activitypub_actor FROM  internal_users WHERE preferred_username = $1",
-        &username
-    )
-    .fetch_optional(&mut *transaction)
-    .await;
-
-    if val.unwrap().is_some() {
-        return Err(());
-    };
-
-    let tmp_domain = &state.instance_domain;
-    let tmp_uname = &username;
-    let id = format!("https://{tmp_domain}/users/{tmp_uname}");
-
-    let inbox = format!("https://{tmp_domain}/users/{tmp_uname}/inbox");
-    let outbox = format!("https://{tmp_domain}/users/{tmp_uname}/outbox");
-    let followers = format!("https://{tmp_domain}/users/{tmp_uname}/followers");
-    let following = format!("https://{tmp_domain}/users/{tmp_uname}/following");
-    let liked = format!("https://{tmp_domain}/users/{tmp_uname}/liked");
-
-    let rsa = Rsa::generate(2048).unwrap();
-
-    let private_key = String::from_utf8(rsa.private_key_to_pem().unwrap()).unwrap();
-
-    let public = rsa.public_key_to_pem().unwrap();
-
-    let key_id = format!("https://{tmp_domain}/users/{tmp_uname}#main-key");
-    let public_key = PublicKey {
-        id: key_id,
-        owner: id.clone(),
-        public_key_pem: String::from_utf8(public).unwrap(),
-    };
-    let serialized_pub = serde_json::to_string(&public_key).unwrap();
-
-    let x = query!(
-        r#"INSERT INTO activitypub_users 
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
-        VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
-        RETURNING ap_user_id
-        "#,
-        id,
-        &username,
-        tmp_domain,
-        inbox,
-        outbox,
-        followers,
-        following,
-        liked,
-        serialized_pub
-    )
-    .fetch_one(&mut *transaction)
-    .await;
-
-    let actor = x.unwrap().ap_user_id;
-
-    let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(password.as_bytes(), &salt);
-
-    if password_hash.is_err() {
-        return Err(());
-    }
-
-    let pass = password_hash.unwrap().to_string();
-
-    let uid = query!(
-        r#"INSERT INTO internal_users 
-            (password, preferred_username, activitypub_actor, private_key )
-        VALUES
-            ($1, $2, $3, $4)
-        RETURNING uid
-        "#,
-        pass,
-        &username,
-        actor,
-        private_key
-    )
-    .fetch_one(&mut *transaction)
-    .await;
-
-    transaction.commit().await.unwrap();
-
-    Ok(uid.unwrap().uid)
 }
 
 #[get("/post_test")]
@@ -229,14 +142,14 @@ pub async fn post_to_inbox(
 
     // dbg!(&from_id);
 
-    let header: String = r#"keyId=""#.to_string()
-        + from_id
-        + r#"#main-key",headers="(request-target) host date digest",signature=""#
-        + &signature
-        + r#"""#;
-    // let header = format!(
-    //     r#"keyId="{from_id}",headers="(request-target) host date",signature="{signature}""#
-    // );
+    // let header: String = r#"keyId=""#.to_string()
+    //     + from_id
+    //     + r#"#main-key",headers="(request-target) host date digest",signature=""#
+    //     + &signature
+    //     + r#"""#;
+    let header = format!(
+        r#"keyId="{from_id}#main-key",headers="(request-target) host date digest",signature="{signature}""#
+    );
 
     // println!("{}", &header);
 

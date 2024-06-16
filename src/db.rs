@@ -7,9 +7,8 @@ use openssl::rsa::Rsa;
 use serde::{Deserialize, Serialize};
 use sqlx::{query, Pool, Postgres};
 
-use crate::activitystream_objects::actors::PublicKey;
+use crate::activitystream_objects::actors::{Actor, PublicKey};
 
-// use crate::webfinger::WebfingerQuery;
 pub struct DbConn {
     pub db: Pool<Postgres>,
 }
@@ -183,9 +182,56 @@ pub async fn create_internal_actor(
 
     let pass = password_hash.unwrap().to_string();
 
-    let uid = insert_into_local_users(&mut *transaction, &pass, &username, actor, &private_key).await;
+    let uid =
+        insert_into_local_users(&mut *transaction, &pass, &username, actor, &private_key).await;
 
     transaction.commit().await.unwrap();
 
     Ok(uid.unwrap())
+}
+
+pub enum InsertErr {
+    NoDomain,
+    DbErr(sqlx::Error),
+}
+
+/// Note: Must be within a transactionor bad behavior can occur as 2 inserts need to happen
+pub async fn insert_actor_into_ap_users<'e, 'c: 'e, E>(
+    executor: E,
+    actor: Actor,
+) -> Result<i64, InsertErr>
+where
+    E: 'e + sqlx::PgExecutor<'c>,
+{
+    let id = actor.extends_object.id.as_str();
+    let Some(domain) = actor.extends_object.id.domain() else {
+        return Err(InsertErr::NoDomain);
+    };
+
+    let val = query!(
+        r#"INSERT INTO activitypub_users 
+            (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
+        RETURNING ap_user_id
+        "#,
+        id,
+        actor.preferred_username,
+        domain,
+        actor.inbox,
+        actor.outbox,
+        actor.followers,
+        actor.following,
+        actor.liked,
+        "hi"
+    )
+    .fetch_one(executor)
+    .await;
+
+    match val {
+        Ok(x) => Ok(x.ap_user_id),
+        Err(x) => Err(x),
+    };
+
+    todo!()
 }

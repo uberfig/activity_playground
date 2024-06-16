@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::activity_types::*;
+use super::{activity_types::*, actors::Actor};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActivityStream {
     #[serde(flatten)]
-    content: ContextWrap,
+    pub content: ContextWrap,
 }
 
 //-------------------glue--------------
@@ -39,9 +39,10 @@ pub enum Context {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsObject {
-    Object(ObjectWrapper),
-    ExtendsIntransitive(ExtendsIntransitive),
-    ExtendsCollection(ExtendsCollection),
+    Object(Box<ObjectWrapper>),
+    ExtendsIntransitive(Box<ExtendsIntransitive>),
+    ExtendsCollection(Box<ExtendsCollection>),
+    Actor(Box<Actor>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -128,7 +129,7 @@ pub enum ObjectWrapper {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
-    pub id: String,
+    pub id: Url,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -235,7 +236,7 @@ pub enum LinkType {
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
-    Object(Box<ExtendsObject>),
+    Object(ExtendsObject),
     Link(Box<LinkType>),
 }
 

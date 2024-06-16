@@ -8,6 +8,7 @@ use activity_playground::{
         inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
         webfinger::webfinger,
     },
+    cache_and_fetch::Cache,
     config::Config,
     db::DbConn,
 };
@@ -99,11 +100,14 @@ async fn main() -> std::io::Result<()> {
         inbox: Mutex::new(Vec::new()),
     });
 
+    let cache = Data::new(Cache::new());
+
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(DbConn { db: pool.clone() }))
             .app_data(Data::new(config.to_owned()))
             .app_data(inbox.clone())
+            .app_data(cache.clone())
             .service(hello)
             .service(webfinger)
             .service(get_actor)
