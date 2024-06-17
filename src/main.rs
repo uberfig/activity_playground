@@ -8,9 +8,9 @@ use activity_playground::{
         inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
         webfinger::webfinger,
     },
-    cache_and_fetch::Cache,
+    cache_and_fetch::{Cache, InstanceActor},
     config::Config,
-    db::db::DbConn,
+    db::db_methods::DbConn,
 };
 use actix_web::{
     // error::ErrorBadRequest,
@@ -23,7 +23,7 @@ use actix_web::{
     Result,
 };
 // use serde::{Deserialize, Serialize};
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::PgPoolOptions, query};
 
 #[get("/")]
 async fn hello() -> impl Responder {
@@ -94,13 +94,51 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Error building a connection pool");
 
-    //-----------------------------
+    //-------------init instance actor----------------
+
+    let val = query!(r#"SELECT * FROM instance_actor LIMIT 1"#,)
+        .fetch_optional(&pool)
+        .await;
+
+    let val = match val.unwrap() {
+        Some(x) => InstanceActor::new(
+            openssl::rsa::Rsa::private_key_from_pem(x.private_key.as_bytes()).unwrap(),
+            x.public_key_pem,
+            &config.instance_domain,
+        ),
+        None => {
+            let rsa = openssl::rsa::Rsa::generate(2048).unwrap();
+            let private_key = String::from_utf8(rsa.private_key_to_pem().unwrap()).unwrap();
+            let public = String::from_utf8(rsa.public_key_to_pem().unwrap()).unwrap();
+
+            let val = query!(
+                r#"INSERT INTO instance_actor 
+                    (private_key, public_key_pem)
+                VALUES
+                    ($1, $2)
+                "#,
+                &private_key,
+                &public,
+            )
+            .execute(&pool)
+            .await;
+
+            val.unwrap();
+            InstanceActor::new(
+                openssl::rsa::Rsa::private_key_from_pem(private_key.as_bytes()).unwrap(),
+                public,
+                &config.instance_domain,
+            )
+        }
+    };
+
+    //-------------------------------------------------
 
     let inbox = Data::new(Inbox {
         inbox: Mutex::new(Vec::new()),
     });
 
-    let cache = Data::new(Cache::new());
+    let cache = Data::new(Cache::new(val));
 
     HttpServer::new(move || {
         App::new()

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-json-ld = "0.17.0"
+# json-ld = "0.17.0"
 serde = { version = "1.0.203", features = ["derive"]}
 # actix-web = {version = "4", features = ["rustls"]}
 sqlx = { version = "0.7.4", features = ["runtime-tokio", "postgres", "macros"]}

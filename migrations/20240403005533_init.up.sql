@@ -11,9 +11,6 @@ CREATE TABLE activitypub_users (
 	followers			TEXT NOT NULL,
 	following			TEXT NOT NULL,
 	liked				TEXT NULL
-
-	-- public_key			TEXT NOT NULL
-
 	-- featured			TEXT,
 	-- featuredTags		TEXT,
 	-- url					TEXT,
@@ -21,7 +18,11 @@ CREATE TABLE activitypub_users (
 	-- discoverable		BOOLEAN,
 	-- indexable			BOOLEAN,
 	-- memorial			BOOLEAN
+);
 
+CREATE TABLE instance_actor (
+	private_key			TEXT NOT NULL,
+	public_key_pem		TEXT NOT NULL
 );
 
 CREATE TABLE public_keys (

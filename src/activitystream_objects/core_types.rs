@@ -102,7 +102,6 @@ pub enum ExtendsCollectionPage {
 #[serde(untagged)]
 pub enum ExtendsCollection {
     Collection(Collection),
-    OrderedCollection(OrderedCollection),
     ExtendsCollectionPage,
 }
 
@@ -136,9 +135,44 @@ pub enum ObjectWrapper {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ID {
+    pub id: Url,
+}
+
+impl From<Url> for ID {
+    fn from(value: Url) -> Self {
+        ID { id: value }
+    }
+}
+
+impl ID {
+    pub fn as_str(&self) -> &str {
+        self.id.as_str()
+    }
+    pub fn domain(&self) -> Option<&str> {
+        self.id.domain()
+    }
+}
+
+impl Into<Url> for ID {
+    fn into(self) -> Url {
+        self.id
+    }
+}
+
+impl Default for ID {
+    fn default() -> Self {
+        Self {
+            id: Url::parse("invalid").unwrap(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
-    pub id: Url,
+    #[serde(flatten)]
+    pub id: ID,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -215,6 +249,15 @@ pub struct Object {
     pub duration: Option<String>,
 }
 
+impl Object {
+    pub fn new(id: Url) -> Object {
+        Object {
+            id: ID { id },
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum LinkWrapper {
@@ -285,15 +328,23 @@ pub struct Activity {
 
 // --------------collections----------------
 
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// #[serde(tag = "type")]
+// pub enum CollectionyWrapper {
+//     Collection(Collection),
+// }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum CollectionyWrapper {
-    Collection(Collection),
+#[serde(rename_all = "camelCase")]
+pub enum CollectionType {
+    Collection,
+    OrderedCollection
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Collection {
+    #[serde(rename = "type")]
+    pub type_field: CollectionType,
     #[serde(flatten)]
     pub extends_object: Object,
     pub total_items: u32,
@@ -301,19 +352,6 @@ pub struct Collection {
     pub first: Option<String>,   //TODO
     pub last: Option<String>,    //TODO
     pub items: Option<String>,   //TODO
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum OrderedCollectionWrapper {
-    OrderedCollection(OrderedCollection),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderedCollection {
-    #[serde(flatten)]
-    pub extends_collection: Collection,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
