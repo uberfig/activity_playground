@@ -72,10 +72,10 @@ pub enum ActorType {
     Service,
 }
 
-pub trait IsActor {
-    fn actor<'a>(&'a self) -> &'a Actor;
-    fn actor_type(&self) -> ActorType;
-}
+// pub trait IsActor {
+//     fn actor(self) -> Actor;
+//     fn actor_type(&self) -> ActorType;
+// }
 
 //-------------------types--------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,11 +91,6 @@ impl From<String> for PublicKey {
     }
 }
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag = "type")]
-// pub enum ActorWrapper {
-//     Actor(Actor),
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -155,11 +150,11 @@ impl From<Box<Actor>> for ActivityStream {
     }
 }
 
-impl IsActor for &Actor {
-    fn actor<'a>(&'a self) -> &'a Actor {
-        &self
-    }
-    fn actor_type(&self) -> ActorType {
-        ActorType::Actor
-    }
-}
+// impl IsActor for &Actor {
+//     fn actor<'a>(&'a self) -> &'a Actor {
+//         &self
+//     }
+//     fn actor_type(&self) -> ActorType {
+//         ActorType::Actor
+//     }
+// }

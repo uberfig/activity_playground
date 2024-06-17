@@ -4,7 +4,7 @@ use argon2::{
     Argon2,
 };
 use openssl::rsa::Rsa;
-use sqlx::{query, query_as, Pool, Postgres};
+use sqlx::{query, Pool, Postgres};
 use url::Url;
 
 use crate::activitystream_objects::actors::{Actor, PublicKey};
@@ -185,13 +185,13 @@ pub async fn create_internal_actor(
     let x =
         insert_into_ap_users(&mut *transaction, &username, &state.instance_domain, &links).await;
 
-    let key_id = insert_public_key(
+    let _key_id = insert_public_key(
         &mut *transaction,
         &key_id,
         &links.id,
         &String::from_utf8(public).unwrap(),
     )
-    .await;
+    .await.unwrap();
 
     let actor = x.unwrap();
 
@@ -238,7 +238,7 @@ pub async fn create_ap_actor(actor: &Actor, conn: &Data<DbConn>) -> Result<i64, 
 
     transaction.commit().await.unwrap();
 
-    return Ok(ap_id);
+    Ok(ap_id)
 }
 
 pub async fn insert_public_key<'e, 'c: 'e, E>(

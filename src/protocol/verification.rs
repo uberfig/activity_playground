@@ -145,22 +145,16 @@ pub async fn verify_request(
                 "host" => Some(format!("host: {instance_domain}")),
                 _ => {
                     let Some(value) = request_headers.get(signed_header_name) else {
-                        // return Err(RequestVerificationError::MissingSignedHeaderField(signed_header_name.to_owned());
                         return None;
                     };
 
                     let value = String::from_utf8(
-                        request_headers
-                            .get(signed_header_name)
-                            .unwrap()
-                            .as_bytes()
-                            .to_vec(),
+                        value.as_bytes().to_vec()
                     )
                     .unwrap();
                     let x = format!("{signed_header_name}: {value}",);
                     dbg!(&x);
                     Some(x)
-                    // todo!()
                 }
             }
         })
