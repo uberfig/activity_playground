@@ -141,10 +141,6 @@ pub async fn post_to_inbox(
         r#"keyId="{from_id}#main-key",headers="(request-target) host date digest",signature="{signature}""#
     );
 
-    // println!("{}", &header);
-
-    // dbg!(&header);
-
     let client = reqwest::Client::new();
     let client = client
         .post(to_inbox)
