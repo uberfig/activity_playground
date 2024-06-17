@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashMap, sync::RwLock, time::Duration};
+use std::{collections::HashMap, sync::RwLock, time::Duration};
 
 use url::Url;
 
@@ -46,7 +46,10 @@ pub async fn get_object(id: Url, cache: &Cache) -> ContextWrap {
         read_lock.get(id.as_str()).cloned()
     };
 
-    if let Some(x) = cached {}
+    if let Some(x) = cached {
+        dbg!(x);
+        todo!()
+    }
 
     let client = reqwest::Client::new();
     let client = client.get(id).header("accept", "application/activity+json");
