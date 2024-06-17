@@ -45,30 +45,33 @@ pub async fn insert_into_ap_users<'e, 'c: 'e, E>(
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
-    let val = query!(
-        r#"INSERT INTO activitypub_users 
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
-        VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
-        RETURNING ap_user_id
-        "#,
-        links.id,
-        username,
-        domain,
-        links.inbox,
-        links.outbox,
-        links.followers,
-        links.following,
-        links.liked,
-        serialized_pub
-    )
-    .fetch_one(executor)
-    .await;
 
-    match val {
-        Ok(x) => Ok(x.ap_user_id),
-        Err(x) => Err(x),
-    }
+    return todo!();
+
+    // let val = query!(
+    //     r#"INSERT INTO activitypub_users 
+    //         (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
+    //     VALUES
+    //         ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
+    //     RETURNING ap_user_id
+    //     "#,
+    //     links.id,
+    //     username,
+    //     domain,
+    //     links.inbox,
+    //     links.outbox,
+    //     links.followers,
+    //     links.following,
+    //     links.liked,
+    //     serialized_pub
+    // )
+    // .fetch_one(executor)
+    // .await;
+
+    // match val {
+    //     Ok(x) => Ok(x.ap_user_id),
+    //     Err(x) => Err(x),
+    // }
 }
 
 pub async fn insert_into_local_users<'e, 'c: 'e, E>(
@@ -190,48 +193,75 @@ pub async fn create_internal_actor(
     Ok(uid.unwrap())
 }
 
+/// Note don't forget to insert the actor first
+pub async fn insert_public_key<'e, 'c: 'e, E>(
+    executor: E,
+    actor: &Actor,
+) -> Result<i64, sqlx::Error>
+where
+    E: 'e + sqlx::PgExecutor<'c>,
+{
+    let actor_id = actor.extends_object.id.as_str();
+
+    let val = query!(
+        r#"INSERT INTO public_keys 
+            (id, owner, public_key_pem)
+        VALUES
+            ($1, $2, $3)
+        RETURNING pub_key_id
+        "#,
+        actor.public_key.id,
+        actor_id,
+        actor.public_key.public_key_pem
+    )
+    .fetch_one(executor)
+    .await;
+
+    match val {
+        Ok(x) => Ok(x.pub_key_id),
+        Err(x) => Err(x),
+    }
+}
+
 pub enum InsertErr {
     NoDomain,
     DbErr(sqlx::Error),
 }
 
-/// Note: Must be within a transactionor bad behavior can occur as 2 inserts need to happen
+/// Note don't forget to insert the public key
 pub async fn insert_actor_into_ap_users<'e, 'c: 'e, E>(
     executor: E,
-    actor: Actor,
+    actor: &Actor,
 ) -> Result<i64, InsertErr>
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
-    let id = actor.extends_object.id.as_str();
+    let actor_id = actor.extends_object.id.as_str();
     let Some(domain) = actor.extends_object.id.domain() else {
         return Err(InsertErr::NoDomain);
     };
 
     let val = query!(
         r#"INSERT INTO activitypub_users 
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
+            (id, preferred_username, domain, inbox, outbox, followers, following, liked)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
+            ($1, $2, $3, $4, $5, $6, $7, $8 )
         RETURNING ap_user_id
         "#,
-        id,
+        actor_id,
         actor.preferred_username,
         domain,
         actor.inbox,
         actor.outbox,
         actor.followers,
         actor.following,
-        actor.liked,
-        "hi"
+        actor.liked
     )
     .fetch_one(executor)
     .await;
 
     match val {
-        Ok(x) => Ok(x.ap_user_id),
-        Err(x) => Err(x),
-    };
-
-    todo!()
+        Ok(x) => return Ok(x.ap_user_id),
+        Err(x) => return Err(InsertErr::DbErr(x)),
+    }
 }
