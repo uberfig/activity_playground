@@ -139,23 +139,18 @@ pub async fn verify_request(
     let comparison_string: Vec<String> = headers
         .replace('"', "")
         .split(' ')
-        .filter_map(|signed_header_name| {
-            match signed_header_name {
-                "(request-target)" => Some(format!("(request-target): post {path}")),
-                "host" => Some(format!("host: {instance_domain}")),
-                _ => {
-                    let Some(value) = request_headers.get(signed_header_name) else {
-                        return None;
-                    };
+        .filter_map(|signed_header_name| match signed_header_name {
+            "(request-target)" => Some(format!("(request-target): post {path}")),
+            "host" => Some(format!("host: {instance_domain}")),
+            _ => {
+                let Some(value) = request_headers.get(signed_header_name) else {
+                    return None;
+                };
 
-                    let value = String::from_utf8(
-                        value.as_bytes().to_vec()
-                    )
-                    .unwrap();
-                    let x = format!("{signed_header_name}: {value}",);
-                    dbg!(&x);
-                    Some(x)
-                }
+                let value = String::from_utf8(value.as_bytes().to_vec()).unwrap();
+                let x = format!("{signed_header_name}: {value}",);
+                dbg!(&x);
+                Some(x)
             }
         })
         .collect();

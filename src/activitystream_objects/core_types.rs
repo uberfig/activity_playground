@@ -9,6 +9,15 @@ pub struct ActivityStream {
     pub content: ContextWrap,
 }
 
+impl ActivityStream {
+    pub fn get_actor(self) -> Option<Box<Actor>> {
+        match self.content.activity_stream {
+            RangeLinkObject::Object(ExtendsObject::Actor(x)) => Some(x),
+            _ => None,
+        }
+    }
+}
+
 //-------------------glue--------------
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// wraps base object to include context

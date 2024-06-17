@@ -119,15 +119,13 @@ where
     .await;
 
     match val {
-        Ok(x) => {
-            match x {
-                Some(x) => Ok(Some(PublicKey {
-                    id: x.id,
-                    owner: x.owner,
-                    public_key_pem: x.public_key_pem,
-                })),
-                None => Ok(None),
-            }
+        Ok(x) => match x {
+            Some(x) => Ok(Some(PublicKey {
+                id: x.id,
+                owner: x.owner,
+                public_key_pem: x.public_key_pem,
+            })),
+            None => Ok(None),
         },
         Err(x) => Err(x),
     }
@@ -191,7 +189,8 @@ pub async fn create_internal_actor(
         &links.id,
         &String::from_utf8(public).unwrap(),
     )
-    .await.unwrap();
+    .await
+    .unwrap();
 
     let actor = x.unwrap();
 

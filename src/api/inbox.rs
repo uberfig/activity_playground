@@ -17,7 +17,6 @@ use crate::protocol::verification::verify_request;
 // use json_ld::object::value;
 // use serde::{Deserialize, Serialize};
 
-
 pub struct Inbox {
     pub inbox: Mutex<Vec<String>>,
 }

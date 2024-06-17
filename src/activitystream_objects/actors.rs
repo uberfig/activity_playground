@@ -91,7 +91,6 @@ impl From<String> for PublicKey {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// summary, id, and name are inherited from [`Object`]

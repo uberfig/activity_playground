@@ -1,6 +1,10 @@
 use std::time::SystemTime;
 
-use openssl::{hash::MessageDigest, pkey::{PKey, Private}, rsa::Rsa};
+use openssl::{
+    hash::MessageDigest,
+    pkey::{PKey, Private},
+    rsa::Rsa,
+};
 use url::Url;
 
 use crate::activitystream_objects::core_types::ActivityStream;
@@ -13,24 +17,23 @@ pub enum FetchErr {
 pub async fn authorized_fetch(
     object_id: &Url,
     key_id: &str,
-    private_key: Rsa<Private>,
-) ->Result<ActivityStream, FetchErr> {
-
+    private_key: &Rsa<Private>,
+) -> Result<ActivityStream, FetchErr> {
     let path = object_id.path();
     let fetch_domain = object_id.domain().unwrap();
 
-    let keypair = PKey::from_rsa(private_key).unwrap();
+    let keypair = PKey::from_rsa(private_key.clone()).unwrap();
 
     let date = httpdate::fmt_http_date(SystemTime::now());
 
     //string to be signed
-    let signed_string = format!("(request-target): get {path}\nhost: {fetch_domain}\ndate: {date}");
+    let signed_string = format!("(request-target): get {path}\nhost: {fetch_domain}\ndate: {date}\naccept: application/activity+json");
     let mut signer = openssl::sign::Signer::new(MessageDigest::sha256(), &keypair).unwrap();
     signer.update(signed_string.as_bytes()).unwrap();
     let signature = openssl::base64::encode_block(&signer.sign_to_vec().unwrap());
 
     let header = format!(
-        r#"keyId="{key_id}",headers="(request-target) host date",signature="{signature}""#
+        r#"keyId="{key_id}",headers="(request-target) host date accept",signature="{signature}""#
     );
 
     let client = reqwest::Client::new();
@@ -39,6 +42,7 @@ pub async fn authorized_fetch(
         .header("Host", fetch_domain)
         .header("Date", date)
         .header("Signature", header)
+        .header("accept", "application/activity+json")
         .body("");
 
     dbg!(&client);
@@ -57,7 +61,7 @@ pub async fn authorized_fetch(
         Ok(x) => x,
         Err(x) => return Err(FetchErr::RequestErr(x)),
     };
-    
+
     let object: Result<ActivityStream, serde_json::Error> = serde_json::from_str(&response);
     let object = match object {
         Ok(x) => x,

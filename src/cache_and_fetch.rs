@@ -1,10 +1,23 @@
-use std::{collections::HashMap, sync::RwLock, time::Duration};
+use std::{
+    collections::HashMap,
+    sync::RwLock,
+    time::{Duration, SystemTime},
+};
 
+use actix_web::web::Data;
+use json_ld::object;
+use openssl::{pkey::Private, rsa::Rsa};
 use url::Url;
 
-use crate::activitystream_objects::core_types::ContextWrap;
+use crate::{
+    activitystream_objects::core_types::{ActivityStream, ContextWrap},
+    db::db_methods::DbConn,
+    protocol::fetch::authorized_fetch,
+};
 
 const MAX_AGE: std::time::Duration = Duration::from_secs(4);
+
+const MAX_ADVERSE: i32 = 6;
 
 // const base: i64 = 2;
 
@@ -17,18 +30,25 @@ pub struct DomainRequest {
 #[derive(Debug, Clone)]
 pub struct CachedItem<T: Clone> {
     pub item: T,
-    pub fetched_at: u64,
+    pub fetched_at: SystemTime,
+}
+
+pub struct InstanceActor {
+    pub key_id: String,
+    pub private_key: Rsa<Private>,
 }
 
 pub struct Cache {
+    pub instance_actor: InstanceActor,
     pub domains: RwLock<HashMap<String, DomainRequest>>,
     pub outgoing_cache: RwLock<HashMap<String, String>>, //cache of objects being externally requested
-    pub fetch: RwLock<HashMap<String, CachedItem<ContextWrap>>>, //cache of objects being fetched
+    pub fetch: RwLock<HashMap<String, CachedItem<ActivityStream>>>, //cache of objects being fetched
 }
 
 impl Cache {
-    pub fn new() -> Cache {
+    pub fn new(instance_actor: InstanceActor) -> Cache {
         Cache {
+            instance_actor,
             domains: RwLock::new(HashMap::new()),
             outgoing_cache: RwLock::new(HashMap::new()),
             fetch: RwLock::new(HashMap::new()),
@@ -36,38 +56,82 @@ impl Cache {
     }
 }
 
-pub async fn get_local_object(id: Url) -> ContextWrap {
+pub async fn get_local_object(id: Url) -> ActivityStream {
     todo!()
 }
 
-pub async fn get_object(id: Url, cache: &Cache) -> ContextWrap {
+pub enum FetchErr {
+    MaxAdverse,
+    DoesNotExist,
+}
+
+pub async fn get_federated_object(
+    id: Url,
+    cache: &Cache,
+    conn: &Data<DbConn>,
+) -> Result<ActivityStream, FetchErr> {
     let cached = {
         let read_lock = cache.fetch.read().unwrap();
         read_lock.get(id.as_str()).cloned()
     };
 
-    if let Some(x) = cached {
+    if let Some(x) = &cached {
         dbg!(x);
-        todo!()
+
+        let time = SystemTime::now();
+        let elapsed = time.duration_since(x.fetched_at);
+
+        let elapsed = match elapsed {
+            Ok(x) => x,
+            Err(x) => x.duration(),
+        };
+
+        if elapsed.as_secs() > MAX_AGE.as_secs() {
+            //get from database, it may have had an update activity or smth
+            todo!()
+        } else {
+            return Ok(x.item.clone());
+        }
     }
 
-    let client = reqwest::Client::new();
-    let client = client.get(id).header("accept", "application/activity+json");
+    let object = authorized_fetch(
+        &id,
+        &cache.instance_actor.key_id,
+        &cache.instance_actor.private_key,
+    )
+    .await;
+    let object = match object {
+        Ok(x) => x,
+        Err(x) => todo!(),
+    };
 
-    let response = client.send().await.unwrap();
-    let response = response.bytes().await.unwrap();
+    let time = SystemTime::now();
 
-    let object: Result<ContextWrap, _> = serde_json::from_slice(&response);
+    {
+        let mut write_lock = cache.fetch.write().unwrap();
+        write_lock.insert(
+            id.as_str().to_owned(),
+            CachedItem {
+                item: object.clone(),
+                fetched_at: time,
+            },
+        );
+    }
 
-    object.unwrap()
+    Ok(object)
 }
 
-pub async fn fetch_object(id: Url, test_config: &String, cache: &Cache) -> ContextWrap {
+pub async fn fetch_object(
+    id: Url,
+    state: &Data<crate::config::Config>,
+    cache: &Cache,
+    conn: &Data<DbConn>,
+) -> Result<ActivityStream, FetchErr> {
     if let Some(x) = id.domain() {
-        if x.eq_ignore_ascii_case(test_config) {
-            return get_local_object(id).await;
+        if x.eq_ignore_ascii_case(&state.instance_domain) {
+            return Ok(get_local_object(id).await);
         }
-        return get_object(id, cache).await;
+        return get_federated_object(id, cache, conn).await;
     }
 
     todo!()
