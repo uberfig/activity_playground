@@ -9,8 +9,7 @@ use activity_playground::{
         webfinger::webfinger,
     },
     cache_and_fetch::Cache,
-    config::Config,
-    db::DbConn,
+    config::Config, db::db::DbConn,
 };
 use actix_web::{
     // error::ErrorBadRequest,

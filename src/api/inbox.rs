@@ -12,15 +12,12 @@ use actix_web::{
     HttpResponse,
     Result,
 };
+
+use crate::protocol::verification::verify_request;
 // use json_ld::object::value;
 // use serde::{Deserialize, Serialize};
 
-use crate::{
-    // activitystream_objects::{OldActor, VerificationActor},
-    // db::DbConn,
-    // verification::{generate_digest, verify_request},
-    verification::verify_request,
-};
+
 pub struct Inbox {
     pub inbox: Mutex<Vec<String>>,
 }

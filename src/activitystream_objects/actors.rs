@@ -108,7 +108,6 @@ pub struct Actor {
     pub extends_object: Object,
     pub public_key: PublicKey,
 
-
     pub inbox: String,
     pub outbox: String,
     pub followers: String,
@@ -126,7 +125,10 @@ impl Actor {
     pub fn to_activitystream(self) -> ActivityStream {
         ActivityStream {
             content: ContextWrap {
-                context: Context::Array(vec!["https://www.w3.org/ns/activitystreams".to_owned(), "https://w3id.org/security/v1".to_owned()]),
+                context: Context::Array(vec![
+                    "https://www.w3.org/ns/activitystreams".to_owned(),
+                    "https://w3id.org/security/v1".to_owned(),
+                ]),
                 activity_stream: RangeLinkObject::Object(ExtendsObject::Actor(Box::new(self))),
             },
         }
@@ -143,7 +145,10 @@ impl From<Box<Actor>> for ActivityStream {
     fn from(value: Box<Actor>) -> ActivityStream {
         ActivityStream {
             content: ContextWrap {
-                context: Context::Array(vec!["https://www.w3.org/ns/activitystreams".to_owned(), "https://w3id.org/security/v1".to_owned()]),
+                context: Context::Array(vec![
+                    "https://www.w3.org/ns/activitystreams".to_owned(),
+                    "https://w3id.org/security/v1".to_owned(),
+                ]),
                 activity_stream: RangeLinkObject::Object(ExtendsObject::Actor(value)),
             },
         }

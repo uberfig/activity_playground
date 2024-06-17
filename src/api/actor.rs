@@ -6,27 +6,15 @@ use actix_web::{
     web::{self, Data},
     HttpRequest, HttpResponse, Result,
 };
-use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
-    Argon2,
-};
-// use argon2::{
-//     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-//     Argon2,
-// };
+
 use openssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     rsa::Rsa,
 };
-use sqlx::query;
 
 use crate::{
-    activities,
-    activitystream_objects::{actors::PublicKey, DatabaseActor, OldActivity, OldActor},
-    db::{create_internal_actor, get_actor_id_from_internal, DbConn},
-    // inbox,
-    verification::generate_digest,
+    activities, activitystream_objects::OldActivity, db::db::{create_internal_actor, get_actor_id_from_internal, DbConn}, protocol::verification::generate_digest,
 };
 
 #[get("/actor")]
@@ -63,20 +51,22 @@ pub async fn get_actor(
         }
     };
 
-    let actor = sqlx::query_as!(
-        DatabaseActor,
-        "SELECT * FROM activitypub_users WHERE ap_user_id = $1",
-        id
-    )
-    .fetch_one(&conn.db)
-    .await
-    .unwrap();
+    // let actor = sqlx::query_as!(
+    //     DatabaseActor,
+    //     "SELECT * FROM activitypub_users WHERE ap_user_id = $1",
+    //     id
+    // )
+    // .fetch_one(&conn.db)
+    // .await
+    // .unwrap();
 
-    let actor: OldActor = actor.into();
+    // let actor: OldActor = actor.into();
 
-    Ok(HttpResponse::Ok()
-        .content_type("application/activity+json; charset=utf-8")
-        .body(serde_json::to_string(&actor).unwrap()))
+    // Ok(HttpResponse::Ok()
+    //     .content_type("application/activity+json; charset=utf-8")
+    //     .body(serde_json::to_string(&actor).unwrap()))
+
+    todo!()
 }
 
 #[get("/create_test")]

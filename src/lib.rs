@@ -4,4 +4,4 @@ pub mod api;
 pub mod cache_and_fetch;
 pub mod config;
 pub mod db;
-pub mod verification;
+pub mod protocol;

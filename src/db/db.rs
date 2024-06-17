@@ -4,8 +4,8 @@ use argon2::{
     Argon2,
 };
 use openssl::rsa::Rsa;
-use serde::{Deserialize, Serialize};
-use sqlx::{query, Pool, Postgres};
+use sqlx::{query, query_as, Pool, Postgres};
+use url::Url;
 
 use crate::activitystream_objects::actors::{Actor, PublicKey};
 
@@ -39,39 +39,34 @@ pub async fn insert_into_ap_users<'e, 'c: 'e, E>(
     executor: E,
     username: &str,
     domain: &str,
-    serialized_pub: &str,
     links: &UserLinks,
 ) -> Result<i64, sqlx::Error>
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
+    let val = query!(
+        r#"INSERT INTO activitypub_users
+            (id, preferred_username, domain, inbox, outbox, followers, following, liked)
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING ap_user_id
+        "#,
+        links.id,
+        username,
+        domain,
+        links.inbox,
+        links.outbox,
+        links.followers,
+        links.following,
+        links.liked,
+    )
+    .fetch_one(executor)
+    .await;
 
-    return todo!();
-
-    // let val = query!(
-    //     r#"INSERT INTO activitypub_users 
-    //         (id, preferred_username, domain, inbox, outbox, followers, following, liked, public_key)
-    //     VALUES
-    //         ($1, $2, $3, $4, $5, $6, $7, $8, $9 )
-    //     RETURNING ap_user_id
-    //     "#,
-    //     links.id,
-    //     username,
-    //     domain,
-    //     links.inbox,
-    //     links.outbox,
-    //     links.followers,
-    //     links.following,
-    //     links.liked,
-    //     serialized_pub
-    // )
-    // .fetch_one(executor)
-    // .await;
-
-    // match val {
-    //     Ok(x) => Ok(x.ap_user_id),
-    //     Err(x) => Err(x),
-    // }
+    match val {
+        Ok(x) => Ok(x.ap_user_id),
+        Err(x) => Err(x),
+    }
 }
 
 pub async fn insert_into_local_users<'e, 'c: 'e, E>(
@@ -105,7 +100,38 @@ where
     }
 }
 
-pub async fn get_private_key(conn: &Data<DbConn>, userid: i64) {}
+pub async fn get_private_key<'e, 'c: 'e, E>(
+    executor: E,
+    userid: &Url,
+) -> Result<Option<PublicKey>, sqlx::Error>
+where
+    E: 'e + sqlx::PgExecutor<'c>,
+{
+    let actor_id = userid.as_str();
+
+    let val = query!(
+        r#"SELECT * FROM public_keys
+            WHERE owner = $1        
+        "#,
+        actor_id,
+    )
+    .fetch_optional(executor)
+    .await;
+
+    match val {
+        Ok(x) => {
+            match x {
+                Some(x) => Ok(Some(PublicKey {
+                    id: x.id,
+                    owner: x.owner,
+                    public_key_pem: x.public_key_pem,
+                })),
+                None => Ok(None),
+            }
+        },
+        Err(x) => Err(x),
+    }
+}
 
 pub struct UserLinks {
     pub id: String,
@@ -142,8 +168,6 @@ pub async fn create_internal_actor(
         return Err(());
     };
 
-    // let tmp_domain = &state.instance_domain;
-    // let tmp_uname = &username;
     let links = generate_links(&state.instance_domain, &username);
 
     let rsa = Rsa::generate(2048).unwrap();
@@ -157,19 +181,15 @@ pub async fn create_internal_actor(
         &state.instance_domain, &username
     );
     dbg!(&key_id);
-    let public_key = PublicKey {
-        id: key_id,
-        owner: links.id.clone(),
-        public_key_pem: String::from_utf8(public).unwrap(),
-    };
-    let serialized_pub = serde_json::to_string(&public_key).unwrap();
 
-    let x = insert_into_ap_users(
+    let x =
+        insert_into_ap_users(&mut *transaction, &username, &state.instance_domain, &links).await;
+
+    let key_id = insert_public_key(
         &mut *transaction,
-        &username,
-        &state.instance_domain,
-        &serialized_pub,
-        &links,
+        &key_id,
+        &links.id,
+        &String::from_utf8(public).unwrap(),
     )
     .await;
 
@@ -193,16 +213,43 @@ pub async fn create_internal_actor(
     Ok(uid.unwrap())
 }
 
-/// Note don't forget to insert the actor first
+pub async fn create_ap_actor(actor: &Actor, conn: &Data<DbConn>) -> Result<i64, InsertErr> {
+    let mut transaction = conn.db.begin().await.unwrap();
+
+    let ap_id = insert_actor_into_ap_users(&mut *transaction, actor).await;
+
+    let ap_id = match ap_id {
+        Ok(x) => x,
+        Err(x) => {
+            transaction.rollback().await.unwrap();
+            return Err(x);
+        }
+    };
+
+    let key_id = insert_actor_public_key(&mut *transaction, actor).await;
+
+    let _key_id = match key_id {
+        Ok(x) => x,
+        Err(x) => {
+            transaction.rollback().await.unwrap();
+            return Err(InsertErr::DbErr(x));
+        }
+    };
+
+    transaction.commit().await.unwrap();
+
+    return Ok(ap_id);
+}
+
 pub async fn insert_public_key<'e, 'c: 'e, E>(
     executor: E,
-    actor: &Actor,
+    id: &str,
+    actor_id: &str,
+    public_key_pem: &str,
 ) -> Result<i64, sqlx::Error>
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
-    let actor_id = actor.extends_object.id.as_str();
-
     let val = query!(
         r#"INSERT INTO public_keys 
             (id, owner, public_key_pem)
@@ -210,9 +257,9 @@ where
             ($1, $2, $3)
         RETURNING pub_key_id
         "#,
-        actor.public_key.id,
+        id,
         actor_id,
-        actor.public_key.public_key_pem
+        public_key_pem
     )
     .fetch_one(executor)
     .await;
@@ -221,6 +268,25 @@ where
         Ok(x) => Ok(x.pub_key_id),
         Err(x) => Err(x),
     }
+}
+
+/// Note don't forget to insert the actor first
+pub async fn insert_actor_public_key<'e, 'c: 'e, E>(
+    executor: E,
+    actor: &Actor,
+) -> Result<i64, sqlx::Error>
+where
+    E: 'e + sqlx::PgExecutor<'c>,
+{
+    let actor_id = actor.extends_object.id.as_str();
+
+    insert_public_key(
+        executor,
+        &actor.public_key.id,
+        actor_id,
+        &actor.public_key.public_key_pem,
+    )
+    .await
 }
 
 pub enum InsertErr {
