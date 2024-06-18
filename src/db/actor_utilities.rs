@@ -3,7 +3,7 @@ use sqlx::query;
 
 use crate::activitystream_objects::actors::Actor;
 
-use super::{conn::DbConn, public_key_utilities::insert_actor_public_key};
+use super::{conn::DbConn, public_key::insert_actor_public_key};
 
 ///inserts an actor and its public key
 pub async fn create_ap_actor(actor: &Actor, conn: &Data<DbConn>) -> Result<i64, InsertErr> {

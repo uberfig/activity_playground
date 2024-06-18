@@ -1,4 +1,3 @@
-pub mod activities;
 pub mod activitystream_objects;
 pub mod api;
 pub mod cache_and_fetch;

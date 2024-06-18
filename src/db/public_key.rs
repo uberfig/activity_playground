@@ -2,7 +2,6 @@ use sqlx::query;
 
 use crate::activitystream_objects::actors::Actor;
 
-
 pub async fn insert_public_key<'e, 'c: 'e, E>(
     executor: E,
     id: &str,

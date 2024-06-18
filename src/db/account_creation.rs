@@ -2,10 +2,11 @@ use actix_web::web::Data;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
-};use openssl::rsa::Rsa;
+};
+use openssl::rsa::Rsa;
 use sqlx::query;
 
-use crate::db::{internal_actor::get_actor_id_from_internal, public_key_utilities::insert_public_key};
+use crate::db::{internal_actor::get_actor_id_from_internal, public_key::insert_public_key};
 
 use super::conn::DbConn;
 
@@ -154,4 +155,3 @@ where
         Err(x) => Err(x),
     }
 }
-

@@ -337,7 +337,7 @@ pub struct Activity {
 #[serde(rename_all = "camelCase")]
 pub enum CollectionType {
     Collection,
-    OrderedCollection
+    OrderedCollection,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

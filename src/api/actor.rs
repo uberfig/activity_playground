@@ -14,9 +14,12 @@ use openssl::{
 };
 
 use crate::{
-    activities,
     activitystream_objects::OldActivity,
-    db::{account_creation::create_internal_actor, conn::DbConn, internal_actor::get_actor_id_from_internal},
+    api::activities,
+    db::{
+        account_creation::create_internal_actor, conn::DbConn,
+        internal_actor::get_actor_id_from_internal,
+    },
     protocol::verification::generate_digest,
 };
 
