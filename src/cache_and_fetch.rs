@@ -8,9 +8,7 @@ use actix_web::web::Data;
 use url::Url;
 
 use crate::{
-    activitystream_objects::
-        core_types::ActivityStream
-    ,
+    activitystream_objects::core_types::ActivityStream,
     db::conn::DbConn,
     protocol::{fetch::authorized_fetch, instance_actor::InstanceActor},
 };
