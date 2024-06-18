@@ -14,7 +14,7 @@ use crate::{
         actors::{Actor, ActorType, PublicKey},
         core_types::{ActivityStream, ContextWrap, Object},
     },
-    db::db_methods::{DbConn, UserLinks},
+    db::{account_creation::UserLinks, conn::DbConn},
     protocol::fetch::authorized_fetch,
 };
 

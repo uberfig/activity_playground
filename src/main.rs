@@ -10,7 +10,7 @@ use activity_playground::{
     },
     cache_and_fetch::{Cache, InstanceActor},
     config::Config,
-    db::db_methods::DbConn,
+    db::conn::DbConn,
 };
 use actix_web::{
     // error::ErrorBadRequest,

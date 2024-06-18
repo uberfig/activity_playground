@@ -6,7 +6,7 @@ use actix_web::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::db::db_methods::DbConn;
+use crate::db::conn::DbConn;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WebfingerQuery {
