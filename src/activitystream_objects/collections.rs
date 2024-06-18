@@ -35,7 +35,7 @@ pub struct Collection {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum PageType {
     CollectionPage,
-    OrderedCollectionPage
+    OrderedCollectionPage,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

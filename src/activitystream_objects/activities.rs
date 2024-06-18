@@ -47,7 +47,7 @@ pub struct IntransitiveActivity {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum QuestionType {
-    Question
+    Question,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -227,4 +227,3 @@ pub enum ActivityType {
     /// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-dislike
     Dislike,
 }
-

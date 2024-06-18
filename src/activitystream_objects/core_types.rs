@@ -233,5 +233,3 @@ pub enum RangeLinkObject {
     Object(ExtendsObject),
     Link(Box<LinkType>),
 }
-
-
