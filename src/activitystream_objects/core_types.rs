@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::{activities::*, actors::Actor};
+use super::{activities::*, actors::Actor, collections::ExtendsCollection};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActivityStream {
@@ -36,13 +36,6 @@ pub enum Context {
     Single(String),
 }
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(untagged)]
-// pub enum ActivityStream {
-//     ExtendsObject(Box<ExtendsObject>),
-//     LinkType(Box<LinkType>),
-// }
-
 //--------------------inheritence---------------------
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -52,28 +45,6 @@ pub enum ExtendsObject {
     ExtendsIntransitive(Box<ExtendsIntransitive>),
     ExtendsCollection(Box<ExtendsCollection>),
     Actor(Box<Actor>),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum ExtendsIntransitive {
-    ExtendsActivity(Activity),
-    IntransitiveActivity(IntransitiveActivity),
-    Question(Question),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum ExtendsCollectionPage {
-    CollectionPage(Box<CollectionPageWrapper>),
-    OrderedCollectionPage(Box<OrderedCollectionPageWrapper>),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum ExtendsCollection {
-    Collection(Collection),
-    ExtendsCollectionPage,
 }
 
 //--------------primitive-----------------
@@ -264,62 +235,3 @@ pub enum RangeLinkObject {
 }
 
 
-
-// --------------collections----------------
-
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag = "type")]
-// pub enum CollectionyWrapper {
-//     Collection(Collection),
-// }
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub enum CollectionType {
-    Collection,
-    OrderedCollection,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Collection {
-    #[serde(rename = "type")]
-    pub type_field: CollectionType,
-    #[serde(flatten)]
-    pub extends_object: Object,
-    pub total_items: u32,
-    pub current: Option<String>, //TODO
-    pub first: Option<String>,   //TODO
-    pub last: Option<String>,    //TODO
-    pub items: Option<String>,   //TODO
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum CollectionPageWrapper {
-    CollectionPage(CollectionPage),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct CollectionPage {
-    #[serde(flatten)]
-    pub extends_collection: Collection,
-    pub part_of: Option<String>, //TODO
-    pub next: Option<String>,    //TODO
-    pub prev: Option<String>,    //TODO
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum OrderedCollectionPageWrapper {
-    OrderedCollectionPage(OrderedCollectionPage),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderedCollectionPage {
-    #[serde(flatten)]
-    pub extends_collection: Collection,
-    #[serde(flatten)]
-    pub extends_collection_page: CollectionPage,
-}

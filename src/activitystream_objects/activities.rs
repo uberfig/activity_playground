@@ -5,6 +5,14 @@ use serde::{Deserialize, Serialize};
 use super::core_types::Object;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ExtendsIntransitive {
+    ExtendsActivity(Activity),
+    IntransitiveActivity(IntransitiveActivity),
+    Question(Question),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum IntransitiveType {
     IntransitiveActivity,
     /// An [`IntransitiveActivity`] that indicates that the actor has
@@ -37,11 +45,50 @@ pub struct IntransitiveActivity {
     pub instrument: Option<String>, //TODO
 }
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag = "type")]
-// pub enum ActivityWrapper {
-//     Activity(Activity),
-// }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum QuestionType {
+    Question
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+/// Represents a question being asked.
+/// Question objects are an extension of [`IntransitiveActivity`]. That is,
+/// the Question object is an Activity, but the direct object is the question
+/// itself and therefore it would not contain an object property.
+///
+/// Either of the anyOf and oneOf properties MAY be used to express possible answers,
+/// but a Question object MUST NOT have both properties.
+///
+/// Commonly used for polls
+///
+/// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-question
+pub struct Question {
+    #[serde(rename = "type")]
+    pub type_field: QuestionType,
+    #[serde(flatten)]
+    pub extends_intransitive: IntransitiveActivity,
+    pub one_of: Option<String>, //TODO
+    pub any_of: Option<String>, //TODO
+    pub closed: Option<String>, //TODO
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Activity {
+    #[serde(rename = "type")]
+    pub type_field: ActivityType,
+
+    pub object: Option<Box<Object>>,
+
+    #[serde(flatten)]
+    pub extends_object: Object,
+    pub actor: Option<String>,      //TODO
+    pub target: Option<String>,     //TODO
+    pub result: Option<String>,     //TODO
+    pub origin: Option<String>,     //TODO
+    pub instrument: Option<String>, //TODO
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ActivityType {
@@ -181,40 +228,3 @@ pub enum ActivityType {
     Dislike,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Activity {
-    #[serde(rename = "type")]
-    pub type_field: ActivityType,
-
-    pub object: Option<Box<Object>>,
-
-    #[serde(flatten)]
-    pub extends_object: Object,
-    pub actor: Option<String>,      //TODO
-    pub target: Option<String>,     //TODO
-    pub result: Option<String>,     //TODO
-    pub origin: Option<String>,     //TODO
-    pub instrument: Option<String>, //TODO
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-/// Represents a question being asked.
-/// Question objects are an extension of [`IntransitiveActivity`]. That is,
-/// the Question object is an Activity, but the direct object is the question
-/// itself and therefore it would not contain an object property.
-///
-/// Either of the anyOf and oneOf properties MAY be used to express possible answers,
-/// but a Question object MUST NOT have both properties.
-///
-/// Commonly used for polls
-///
-/// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-question
-pub struct Question {
-    #[serde(flatten)]
-    pub extends_intransitive: IntransitiveActivity,
-    pub one_of: Option<String>, //TODO
-    pub any_of: Option<String>, //TODO
-    pub closed: Option<String>, //TODO
-}

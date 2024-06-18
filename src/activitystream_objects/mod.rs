@@ -2,6 +2,7 @@ pub mod activities;
 pub mod actors;
 pub mod core_types;
 pub mod object_and_link_types;
+pub mod collections;
 
 use actors::PublicKey;
 use serde::{Deserialize, Serialize};
