@@ -1,4 +1,4 @@
-pub mod activity_types;
+pub mod activities;
 pub mod actors;
 pub mod core_types;
 pub mod object_and_link_types;
@@ -9,17 +9,17 @@ use serde::{Deserialize, Serialize};
 //-----------old implimentation kept in this file until I get rid of it, depreciated----------------
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ActorType {
+pub enum OldActorType {
     Person,
     Other,
 }
 
-impl From<String> for ActorType {
+impl From<String> for OldActorType {
     fn from(value: String) -> Self {
         if value.eq_ignore_ascii_case("Person") {
-            return ActorType::Person;
+            return OldActorType::Person;
         }
-        ActorType::Other
+        OldActorType::Other
     }
 }
 
@@ -40,7 +40,7 @@ pub struct OldActor {
     pub context: Vec<String>,
     pub id: String,
     #[serde(rename = "type")]
-    pub type_field: ActorType,
+    pub type_field: OldActorType,
     #[serde(skip)]
     pub name: Option<String>,
     pub preferred_username: String,
@@ -67,7 +67,7 @@ pub struct OldActor {
 pub struct VerificationActor {
     pub id: String,
     #[serde(rename = "type")]
-    pub type_field: ActorType,
+    pub type_field: OldActorType,
     pub preferred_username: String,
     pub public_key: PublicKey,
 }
@@ -102,7 +102,7 @@ pub struct DatabaseActor {
     #[serde(skip)]
     pub ap_user_id: i64,
     #[serde(rename = "type")]
-    pub type_field: ActorType,
+    pub type_field: OldActorType,
     pub id: String,
     pub name: Option<String>,
     pub preferred_username: String,
