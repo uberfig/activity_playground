@@ -97,11 +97,11 @@ async fn main() -> std::io::Result<()> {
 
     //-------------init instance actor----------------
 
-    let val = query!(r#"SELECT * FROM instance_actor LIMIT 1"#,)
+    let instance_actor = query!(r#"SELECT * FROM instance_actor LIMIT 1"#,)
         .fetch_optional(&pool)
         .await;
 
-    let val = match val.unwrap() {
+    let instance_actor = match instance_actor.unwrap() {
         Some(x) => InstanceActor::new(
             openssl::rsa::Rsa::private_key_from_pem(x.private_key.as_bytes()).unwrap(),
             x.public_key_pem,
@@ -139,7 +139,7 @@ async fn main() -> std::io::Result<()> {
         inbox: Mutex::new(Vec::new()),
     });
 
-    let cache = Data::new(Cache::new(val));
+    let cache = Data::new(Cache::new(instance_actor, config.clone()));
 
     HttpServer::new(move || {
         App::new()

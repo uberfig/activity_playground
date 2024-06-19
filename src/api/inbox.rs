@@ -13,10 +13,7 @@ use actix_web::{
     Result,
 };
 
-use crate::protocol::verification::verify_request;
-// use json_ld::object::value;
-// use serde::{Deserialize, Serialize};
-
+use crate::protocol::verification::verify_incoming;
 pub struct Inbox {
     pub inbox: Mutex<Vec<String>>,
 }
@@ -31,22 +28,32 @@ pub async fn inspect_inbox(inbox: Data<Inbox>) -> String {
 
 #[post("/inbox")]
 pub async fn shared_inbox(
+    request: HttpRequest,
     // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
 ) -> Result<HttpResponse, Error> {
-    let mut guard = inbox.inbox.lock().unwrap();
-    let data = &mut *guard;
+    dbg!(&request);
 
-    let val = String::from_utf8(body.to_vec());
+    let x = verify_incoming(request, body, "/users/test/inbox", "place.ivytime.gay").await;
 
-    if let Ok(val) = val {
-        data.push(val);
+    match x {
+        Ok(x) => {
+            println!("{}", &x);
+
+            let mut guard = inbox.inbox.lock().unwrap();
+            let data = &mut *guard;
+            data.push(x);
+
+            return Ok(HttpResponse::Ok()
+                .status(StatusCode::OK)
+                .body("OK".to_string()));
+        }
+        Err(x) => {
+            dbg!(&x);
+            Ok(HttpResponse::Unauthorized().body(serde_json::to_string(&x).unwrap()))
+        }
     }
-
-    Ok(HttpResponse::Ok()
-        .status(StatusCode::OK)
-        .body(" ".to_string())) // <- send response
 }
 
 #[post("/users/{preferred_username}/inbox")]
@@ -69,7 +76,7 @@ pub async fn private_inbox(
 
     dbg!(&request);
 
-    let x = verify_request(request, body, "/users/test/inbox", "place.ivytime.gay").await;
+    let x = verify_incoming(request, body, "/users/test/inbox", "place.ivytime.gay").await;
 
     match x {
         Ok(x) => {

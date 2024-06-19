@@ -32,6 +32,7 @@ pub struct CachedItem<T: Clone> {
 }
 
 pub struct Cache {
+    pub state: crate::config::Config,
     pub instance_actor: InstanceActor,
     pub domains: RwLock<HashMap<String, DomainRequest>>,
     pub outgoing_cache: RwLock<HashMap<String, String>>, //cache of objects being externally requested
@@ -39,8 +40,9 @@ pub struct Cache {
 }
 
 impl Cache {
-    pub fn new(instance_actor: InstanceActor) -> Cache {
+    pub fn new(instance_actor: InstanceActor, state: crate::config::Config) -> Cache {
         Cache {
+            state,
             instance_actor,
             domains: RwLock::new(HashMap::new()),
             outgoing_cache: RwLock::new(HashMap::new()),
@@ -49,17 +51,18 @@ impl Cache {
     }
 }
 
-pub async fn get_local_object(id: Url) -> ActivityStream {
+pub async fn get_local_object(id: &Url) -> ActivityStream {
     todo!()
 }
 
+#[derive(Debug, Clone)]
 pub enum FetchErr {
     MaxAdverse,
     DoesNotExist,
 }
 
 pub async fn get_federated_object(
-    id: Url,
+    id: &Url,
     cache: &Cache,
     conn: &Data<DbConn>,
 ) -> Result<ActivityStream, FetchErr> {
@@ -115,13 +118,12 @@ pub async fn get_federated_object(
 }
 
 pub async fn fetch_object(
-    id: Url,
-    state: &Data<crate::config::Config>,
+    id: &Url,
     cache: &Cache,
     conn: &Data<DbConn>,
 ) -> Result<ActivityStream, FetchErr> {
     if let Some(x) = id.domain() {
-        if x.eq_ignore_ascii_case(&state.instance_domain) {
+        if x.eq_ignore_ascii_case(&cache.state.instance_domain) {
             return Ok(get_local_object(id).await);
         }
         return get_federated_object(id, cache, conn).await;

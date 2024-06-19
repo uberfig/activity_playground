@@ -1,66 +1,36 @@
 use serde::{Deserialize, Serialize};
+use url::Url;
 
-use super::core_types::*;
+use super::{core_types::*, object::Object};
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(untagged)]
-// pub enum ExtendsActor {
-//     Actor(ActorWrapper),
-//     Application(ApplicationWrapper),
-//     Group(GroupWrapper),
-//     Organization(OrganizationWrapper),
-//     Person(PersonWrapper),
-//     Service(ServiceWrapper),
-// }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+/// represents a field that could be an actor or a link
+pub enum RangeLinkActor {
+    Actor(Actor),
+    Link(Url),
+}
 
-// impl IsActor for ExtendsActor {
-//     fn actor<'a>(&'a self) -> &'a Actor {
-//         let val: &'a Actor = match self {
-//             ExtendsActor::Actor(ActorWrapper::Actor(x)) => {
-//                 x
-//             },
-//             ExtendsActor::Application(ApplicationWrapper::Application(x)) => {
-//                 x.actor()
-//             },
-//             ExtendsActor::Group(x) => {
-//                 let val = match x {
-//                     GroupWrapper::Group(x) => x,
-//                 };
-//                 val.actor()
-//             },
-//             ExtendsActor::Organization(x) => {
-//                 let val = match x {
-//                     OrganizationWrapper::Organization(x) => x,
-//                 };
-//                 val.actor()
-//             },
-//             ExtendsActor::Person(x) => {
-//                 let val = match x {
-//                     PersonWrapper::Person(x) => x,
-//                 };
-//                 val.actor()
-//             },
-//             ExtendsActor::Service(x) => {
-//                 let val = match x {
-//                     ServiceWrapper::Service(x) => x,
-//                 };
-//                 val.actor()
-//             },
-//         };
+impl Default for RangeLinkActor {
+    fn default() -> Self {
+        RangeLinkActor::Link(Url::parse("invalid").unwrap())
+    }
+}
 
-//         &val
-//     }
-//     fn actor_type(&self) -> ActorType {
-//         match self {
-//             ExtendsActor::Actor(_) => ActorType::Actor,
-//             ExtendsActor::Application(_) => ActorType::Application,
-//             ExtendsActor::Group(_) => ActorType::Group,
-//             ExtendsActor::Organization(_) => ActorType::Organization,
-//             ExtendsActor::Person(_) => ActorType::Person,
-//             ExtendsActor::Service(_) => ActorType::Service,
-//         }
-//     }
-// }
+impl RangeLinkActor {
+    pub fn get_id(&self) -> &Url {
+        match self {
+            RangeLinkActor::Actor(x) => &x.extends_object.id.id,
+            RangeLinkActor::Link(x) => x,
+        }
+    }
+}
+
+impl PartialEq for RangeLinkActor {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_id() == other.get_id()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ActorType {
@@ -71,11 +41,6 @@ pub enum ActorType {
     Person,
     Service,
 }
-
-// pub trait IsActor {
-//     fn actor(self) -> Actor;
-//     fn actor_type(&self) -> ActorType;
-// }
 
 //-------------------types--------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,7 +88,9 @@ impl Actor {
                     "https://www.w3.org/ns/activitystreams".to_owned(),
                     "https://w3id.org/security/v1".to_owned(),
                 ]),
-                activity_stream: RangeLinkObject::Object(ExtendsObject::Actor(Box::new(self))),
+                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(Box::new(
+                    self,
+                ))),
             },
         }
     }
@@ -143,17 +110,8 @@ impl From<Box<Actor>> for ActivityStream {
                     "https://www.w3.org/ns/activitystreams".to_owned(),
                     "https://w3id.org/security/v1".to_owned(),
                 ]),
-                activity_stream: RangeLinkObject::Object(ExtendsObject::Actor(value)),
+                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(value)),
             },
         }
     }
 }
-
-// impl IsActor for &Actor {
-//     fn actor<'a>(&'a self) -> &'a Actor {
-//         &self
-//     }
-//     fn actor_type(&self) -> ActorType {
-//         ActorType::Actor
-//     }
-// }

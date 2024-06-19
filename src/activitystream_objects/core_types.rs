@@ -1,7 +1,19 @@
+use actix_web::web::Data;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::{activities::*, actors::Actor, collections::ExtendsCollection};
+use crate::{
+    cache_and_fetch::{fetch_object, Cache, FetchErr},
+    db::conn::DbConn,
+};
+
+use super::{
+    activities::*,
+    actors::Actor,
+    collections::ExtendsCollection,
+    link::{Link, LinkSimpleOrExpanded},
+    object::Object,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActivityStream {
@@ -12,7 +24,19 @@ pub struct ActivityStream {
 impl ActivityStream {
     pub fn get_actor(self) -> Option<Box<Actor>> {
         match self.content.activity_stream {
-            RangeLinkObject::Object(ExtendsObject::Actor(x)) => Some(x),
+            RangeLinkExtendsObject::Object(ExtendsObject::Actor(x)) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn get_object(self) -> Option<Box<Object>> {
+        match self.content.activity_stream {
+            RangeLinkExtendsObject::Object(ExtendsObject::Object(x)) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn get_extends_object(self) -> Option<ExtendsObject> {
+        match self.content.activity_stream {
+            RangeLinkExtendsObject::Object(x) => Some(x),
             _ => None,
         }
     }
@@ -25,7 +49,7 @@ pub struct ContextWrap {
     #[serde(flatten)]
     pub context: Context,
     #[serde(flatten)]
-    pub activity_stream: RangeLinkObject,
+    pub activity_stream: RangeLinkExtendsObject,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,195 +65,140 @@ pub enum Context {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsObject {
-    Object(Box<ObjectWrapper>),
+    Object(Box<Object>),
     ExtendsIntransitive(Box<ExtendsIntransitive>),
     ExtendsCollection(Box<ExtendsCollection>),
     Actor(Box<Actor>),
 }
 
-//--------------primitive-----------------
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum MediaType {
-    #[serde(rename = "text/html")]
-    Html,
-    #[serde(rename = "text/markdown")]
-    Markdown,
+impl ExtendsObject {
+    pub fn get_object(&self) -> Option<&Object> {
+        let ExtendsObject::Object(object) = self else {
+            return None;
+        };
+        return Some(&object);
+    }
+    pub fn get_activity(&self) -> Option<&ExtendsIntransitive> {
+        let ExtendsObject::ExtendsIntransitive(activity) = self else {
+            return None;
+        };
+        return Some(&activity);
+    }
+    pub fn get_id(&self) -> &Url {
+        match self {
+            ExtendsObject::Object(x) => &x.id.id,
+            ExtendsObject::ExtendsIntransitive(x) => x.get_id(),
+            ExtendsObject::ExtendsCollection(x) => todo!(),
+            ExtendsObject::Actor(x) => &x.extends_object.id.id,
+        }
+    }
 }
+
+//--------------primitive-----------------
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum LinkOrArray {
-    Single(LinkType),
-    Multiple(Vec<LinkType>),
+    Single(Link),
+    Multiple(Vec<Link>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum RangeLinkObjOrArray {
-    Single(RangeLinkObject),
-    Multiple(Vec<RangeLinkObject>),
+    Single(RangeLinkExtendsObject),
+    Multiple(Vec<RangeLinkExtendsObject>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum ObjectWrapper {
-    Object(Object),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ID {
-    pub id: Url,
-}
-
-impl From<Url> for ID {
-    fn from(value: Url) -> Self {
-        ID { id: value }
-    }
-}
-
-impl ID {
-    pub fn as_str(&self) -> &str {
-        self.id.as_str()
-    }
-    pub fn domain(&self) -> Option<&str> {
-        self.id.domain()
-    }
-}
-
-impl Into<Url> for ID {
-    fn into(self) -> Url {
-        self.id
-    }
-}
-
-impl Default for ID {
-    fn default() -> Self {
-        Self {
-            id: Url::parse("invalid").unwrap(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct Object {
-    #[serde(flatten)]
-    pub id: ID,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    //TODO
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attachment: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attributed_to: Option<Box<ExtendsObject>>,
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // pub audience: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub media_type: Option<MediaType>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies the entity (e.g. an application) that generated the object
-    pub generator: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub icon: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub in_reply_to: Option<RangeLinkObject>,
-
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // pub location: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview: Option<RangeLinkObject>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub published: Option<xsd_types::DateTime>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub replies: Option<Box<ExtendsCollection>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_time: Option<xsd_types::DateTime>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_time: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tag: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<xsd_types::DateTime>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<LinkOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies an Object that is part of the private primary audience of this Object.
-    pub bto: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies an Object that is part of the public secondary audience of this Object.
-    pub cc: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Identifies one or more Objects that are part of the private secondary audience of this Object.
-    pub bcc: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub duration: Option<String>,
-}
-
-impl Object {
-    pub fn new(id: Url) -> Object {
-        Object {
-            id: ID { id },
-            ..Default::default()
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum LinkWrapper {
-    Link(Link),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Link {
-    pub href: Url,
-    pub hreflang: Option<String>,
-    pub media_type: String,
-    pub name: String,
-    pub height: Option<u32>,
-    pub width: Option<u32>,
-    pub preview: Option<String>, //TODO
-    pub rel: Option<String>,     //TODO
-}
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// #[serde(tag = "type")]
+// pub enum ObjectWrapper {
+//     Object(Object),
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum LinkType {
-    Simple(Url),
-    Expanded(LinkWrapper),
+/// represents a field that could be an object or a link
+pub enum RangeLinkExtendsObject {
+    Object(ExtendsObject),
+    Link(LinkSimpleOrExpanded),
+}
+
+impl RangeLinkExtendsObject {
+    pub async fn get_concrete(
+        &self,
+        cache: &Cache,
+        conn: &Data<DbConn>,
+    ) -> Result<ExtendsObject, ConcreteErr> {
+        match self {
+            RangeLinkExtendsObject::Object(x) => Ok(x.clone()),
+            RangeLinkExtendsObject::Link(x) => {
+                let val = fetch_object(x.get_id(), cache, conn).await;
+
+                match val {
+                    Ok(x) => {
+                        let object = x.get_extends_object();
+
+                        match object {
+                            Some(x) => Ok(x),
+                            None => Err(ConcreteErr::NotAnObject),
+                        }
+                    }
+                    Err(x) => Err(ConcreteErr::FetchErr(x)),
+                }
+            },
+        }
+    }
+    pub fn get_id(&self) -> &Url {
+        match self {
+            RangeLinkExtendsObject::Object(x) => &x.get_id(),
+            RangeLinkExtendsObject::Link(x) => x.get_id(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
-    Object(ExtendsObject),
-    Link(Box<LinkType>),
+    Object(Object),
+    Link(LinkSimpleOrExpanded),
+}
+
+#[derive(Debug, Clone)]
+pub enum ConcreteErr {
+    FetchErr(FetchErr),
+    NotAnObject,
+}
+impl RangeLinkObject {
+    pub fn get_id(&self) -> &Url {
+        match self {
+            RangeLinkObject::Object(x) => &x.id.id,
+            RangeLinkObject::Link(x) => x.get_id(),
+        }
+    }
+    pub async fn get_concrete(
+        &self,
+        cache: &Cache,
+        conn: &Data<DbConn>,
+    ) -> Result<Object, ConcreteErr> {
+        match self {
+            RangeLinkObject::Object(x) => Ok(x.clone()),
+            RangeLinkObject::Link(x) => {
+                let val = fetch_object(x.get_id(), cache, conn).await;
+
+                match val {
+                    Ok(x) => {
+                        let object = x.get_object();
+
+                        match object {
+                            Some(x) => Ok(*x),
+                            None => Err(ConcreteErr::NotAnObject),
+                        }
+                    }
+                    Err(x) => Err(ConcreteErr::FetchErr(x)),
+                }
+            }
+        }
+    }
 }

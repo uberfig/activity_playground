@@ -4,7 +4,7 @@ use url::Url;
 use crate::{
     activitystream_objects::{
         actors::{Actor, ActorType, PublicKey},
-        core_types::Object,
+        object::Object,
     },
     db::account_creation::UserLinks,
 };

@@ -1,8 +1,51 @@
 //---------------Activities--------------
 
+use actix_web::web::Data;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
-use super::core_types::Object;
+use crate::{activitystream_objects::object, cache_and_fetch::Cache, db::conn::DbConn};
+
+use super::{
+    actors::RangeLinkActor,
+    core_types::{RangeLinkExtendsObject, RangeLinkObject},
+    object::Object,
+};
+
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// /// not used for deserialization, just for database storage
+// pub enum AllTypes {
+//     //intransitive types
+//     Arrive, //not used
+//     Travel, //not used
+//     Question,
+//     //normal activities
+//     Accept,
+//     TentativeAccept,
+//     Add,
+//     Create,
+//     Delete,
+//     Follow,
+//     Ignore,
+//     Join,
+//     Leave,
+//     Like,
+//     Offer,
+//     Invite,
+//     Reject,
+//     TentativeReject,
+//     Remove,
+//     Undo,
+//     Update,
+//     View,
+//     Listen,
+//     Read,
+//     Move,
+//     Announce,
+//     Block,
+//     Flag,
+//     Dislike,
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
@@ -10,6 +53,23 @@ pub enum ExtendsIntransitive {
     ExtendsActivity(Activity),
     IntransitiveActivity(IntransitiveActivity),
     Question(Question),
+}
+
+impl ExtendsIntransitive {
+    pub fn get_actor(&self) -> &Url {
+        match self {
+            ExtendsIntransitive::ExtendsActivity(x) => &x.extends_intransitive.extends_object.id.id,
+            ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
+            ExtendsIntransitive::Question(x) => &x.extends_intransitive.extends_object.id.id,
+        }
+    }
+    pub fn get_id(&self) -> &Url {
+        match self {
+            ExtendsIntransitive::ExtendsActivity(x) => &x.extends_intransitive.extends_object.id.id,
+            ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
+            ExtendsIntransitive::Question(x) => &x.extends_intransitive.extends_object.id.id,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -38,7 +98,7 @@ pub struct IntransitiveActivity {
 
     #[serde(flatten)]
     pub extends_object: Object,
-    pub actor: Option<String>,      //TODO
+    pub actor: RangeLinkActor,      //TODO
     pub target: Option<String>,     //TODO
     pub result: Option<String>,     //TODO
     pub origin: Option<String>,     //TODO
@@ -79,15 +139,57 @@ pub struct Activity {
     #[serde(rename = "type")]
     pub type_field: ActivityType,
 
-    pub object: Option<Box<Object>>,
+    pub object: RangeLinkExtendsObject,
 
     #[serde(flatten)]
-    pub extends_object: Object,
-    pub actor: Option<String>,      //TODO
-    pub target: Option<String>,     //TODO
-    pub result: Option<String>,     //TODO
-    pub origin: Option<String>,     //TODO
-    pub instrument: Option<String>, //TODO
+    pub extends_intransitive: IntransitiveActivity,
+}
+
+impl Activity {
+    pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
+        match self.type_field {
+            ActivityType::Create => {
+                let object = self.object.get_concrete(cache, conn).await;
+                let object = match object {
+                    Ok(x) => x,
+                    Err(x) => {
+                        dbg!(x);
+                        return Err(());
+                    },
+                };
+                let object = match object.get_object() {
+                    Some(x) => x,
+                    None => {
+                        return Err(());
+                    },
+                };
+
+                if self.extends_intransitive.actor.get_id()
+                    == object.attributed_to.get_id()
+                {
+                    return Ok(());
+                }
+                return Err(());
+            }
+            // ActivityType::Add |
+            // ActivityType::Remove |
+            ActivityType::Undo |
+            ActivityType::Update |
+            ActivityType::Delete => {
+                let Some(actor_domain) = self.extends_intransitive.actor.get_id().domain() else {
+                    return Err(());
+                };
+                let Some(obj_domain) = self.object.get_id().domain() else {
+                    return Err(());
+                };
+                if actor_domain == obj_domain {
+                    return Ok(());
+                }
+                return Err(());
+            }
+            _ => return Ok(()),
+        };
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

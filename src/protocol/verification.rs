@@ -36,7 +36,7 @@ pub enum RequestVerificationError {
 }
 
 ///verifys a request and returns the message body if its valid
-pub async fn verify_request(
+pub async fn verify_incoming(
     request: HttpRequest,
     body: web::Bytes,
     path: &str,
@@ -134,7 +134,6 @@ pub async fn verify_request(
     };
 
     //generate a sign string of the actual request's headers with the real header values mentoned in the provided sign string
-    // let comparison_string= format!("(request-target): post /inbox\nhost: {instance_domain}\ndate: {date}\ndigest: SHA-256={digest}");
 
     let comparison_string: Vec<String> = headers
         .replace('"', "")

@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::core_types::Object;
+use super::object::Object;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
