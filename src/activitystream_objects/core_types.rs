@@ -47,10 +47,7 @@ impl ActivityStream {
         }
     }
     pub fn is_activity(&self) -> bool {
-        match &self.content.activity_stream {
-            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => true,
-            _ => false,
-        }
+        matches!(&self.content.activity_stream, RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(_)))
     }
     pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
         match &self.content.activity_stream {
@@ -97,13 +94,13 @@ impl ExtendsObject {
         let ExtendsObject::Object(object) = self else {
             return None;
         };
-        return Some(&object.object);
+        Some(&object.object)
     }
     pub fn get_activity(&self) -> Option<&ExtendsIntransitive> {
         let ExtendsObject::ExtendsIntransitive(activity) = self else {
             return None;
         };
-        return Some(&activity);
+        Some(activity)
     }
     pub fn get_id(&self) -> &Url {
         match self {
@@ -120,7 +117,7 @@ impl ExtendsObject {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum LinkOrArray {
-    Single(Link),
+    Single(Box<Link>),
     Multiple(Vec<Link>),
 }
 
@@ -131,18 +128,12 @@ pub enum RangeLinkObjOrArray {
     Multiple(Vec<RangeLinkExtendsObject>),
 }
 
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// #[serde(tag = "type")]
-// pub enum ObjectWrapper {
-//     Object(Object),
-// }
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkExtendsObject {
     Object(ExtendsObject),
-    Link(LinkSimpleOrExpanded),
+    Link(Box<LinkSimpleOrExpanded>),
 }
 
 impl RangeLinkExtendsObject {
@@ -172,7 +163,7 @@ impl RangeLinkExtendsObject {
     }
     pub fn get_id(&self) -> &Url {
         match self {
-            RangeLinkExtendsObject::Object(x) => &x.get_id(),
+            RangeLinkExtendsObject::Object(x) => x.get_id(),
             RangeLinkExtendsObject::Link(x) => x.get_id(),
         }
     }
@@ -183,7 +174,7 @@ impl RangeLinkExtendsObject {
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
     Object(ObjectWrapper),
-    Link(LinkSimpleOrExpanded),
+    Link(Box<LinkSimpleOrExpanded>),
 }
 
 #[derive(Debug, Clone)]

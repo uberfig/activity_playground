@@ -1,7 +1,10 @@
 use std::sync::Mutex;
 
 use activity_playground::{
-    activitystream_objects::core_types::ContextWrap,
+    activitystream_objects::{
+        core_types::ActivityStream,
+        object::Object,
+    },
     api::{
         activities::{get_activity, get_object},
         actor::{create_test, get_actor, post_test},
@@ -25,6 +28,7 @@ use actix_web::{
 };
 // use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, query};
+use url::Url;
 
 #[get("/")]
 async fn hello() -> impl Responder {
@@ -49,10 +53,29 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 async fn main() -> std::io::Result<()> {
     // let test = ActivityStream::Object(Object { context: Context::Array(vec!["hi".to_string(), "hello".to_string()]), id: "hi".to_string(), name: "hi".to_string() });
     // println!("{}", serde_json::to_string(&test).unwrap());
-    let deserialized: ContextWrap = serde_json::from_str(
-        r#"{"type":"Object","@context":["https://context1.com","https://context2.com"],"id":"hi","name":"hi"}"#,
-    )
+
+    let test = Object::new(Url::parse("https://test.com/hi").unwrap())
+        .name(Some("hello".to_string()))
+        .to_activitystream();
+    let test = serde_json::to_string_pretty(&test).unwrap();
+    println!("{test}");
+
+    let deserialized: ActivityStream = serde_json::from_str(
+        r#"{
+  "@context": [
+    "test1",
+    "test2"
+  ],
+  "type": "Object",
+  "id": "https://test.com/hi",
+  "name": "hello"
+}"#,)
     .unwrap();
+
+    // let deserialized: ActivityStream = serde_json::from_str(
+    //     r#"{"type":"Object","@context":["https://context1.com","https://context2.com"],"id":"hi","name":"hi"}"#,
+    // )
+    // .unwrap();
     dbg!(&deserialized);
 
     let test = serde_json::to_string_pretty(&deserialized).unwrap();

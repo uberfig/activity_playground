@@ -164,9 +164,12 @@ impl Activity {
                     }
                 };
 
-                if self.extends_intransitive.actor.get_id() == object.attributed_to.get_id() {
-                    return Ok(());
-                }
+                if let Some(x) = &object.attributed_to {
+                    if self.extends_intransitive.actor.get_id() == x.get_id() {
+                        return Ok(());
+                    }
+                };
+
                 return Err(());
             }
             // ActivityType::Add |

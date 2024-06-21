@@ -2,9 +2,12 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::{
-    actors::{Actor, RangeLinkActor},
+    actors::RangeLinkActor,
     collections::ExtendsCollection,
-    core_types::{LinkOrArray, RangeLinkExtendsObject, RangeLinkObjOrArray},
+    core_types::{
+        ActivityStream, Context, ContextWrap, ExtendsObject, LinkOrArray, RangeLinkExtendsObject,
+        RangeLinkObjOrArray,
+    },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,9 +30,9 @@ impl ID {
     }
 }
 
-impl Into<Url> for ID {
-    fn into(self) -> Url {
-        self.id
+impl From<ID> for Url {
+    fn from(val: ID) -> Self {
+        val.id
     }
 }
 
@@ -48,8 +51,9 @@ pub enum MediaType {
     #[serde(rename = "text/markdown")]
     Markdown,
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum ObjectType {
+    #[default]
     Object,
     Relationship, //adds properties: subject | object | relationship
     /// Represents any kind of multi-paragraph written work.
@@ -75,12 +79,6 @@ pub enum ObjectType {
     Tombstone, // adds formerType | deleted
 }
 
-impl Default for ObjectType {
-    fn default() -> Self {
-        ObjectType::Object
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectWrapper {
@@ -101,8 +99,8 @@ pub struct Object {
     //TODO
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attachment: Option<String>,
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    pub attributed_to: Box<RangeLinkActor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributed_to: Option<RangeLinkActor>,
     // #[serde(skip_serializing_if = "Option::is_none")]
     // pub audience: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -175,7 +173,37 @@ impl Object {
     pub fn new(id: Url) -> Object {
         Object {
             id: ID { id },
+            attributed_to: None,
             ..Default::default()
+        }
+    }
+    pub fn attributed_to_link(mut self, attributed_to: Option<Url>) -> Self {
+        match attributed_to {
+            Some(x) => {
+                self.attributed_to = Some(RangeLinkActor::Link(x));
+                self
+            }
+            None => {
+                self.attributed_to = None;
+                self
+            }
+        }
+    }
+    pub fn name(mut self, name: Option<String>) -> Self {
+        self.name = name;
+        self
+    }
+    pub fn to_activitystream(self) -> ActivityStream {
+        ActivityStream {
+            content: ContextWrap {
+                context: Context::Array(vec!["test1".to_string(), "test2".to_string()]),
+                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
+                    ObjectWrapper {
+                        type_field: ObjectType::Object,
+                        object: self,
+                    },
+                ))),
+            },
         }
     }
 }

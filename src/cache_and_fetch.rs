@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     sync::{atomic::AtomicBool, RwLock},
-    time::{Duration, SystemTime},
 };
 
 use actix_web::web::Data;
@@ -104,9 +103,9 @@ pub async fn get_federated_object(
             // }
         }
     }
-    
+
     let object = authorized_fetch(
-        &id,
+        id,
         &cache.instance_actor.key_id,
         &cache.instance_actor.private_key,
     )

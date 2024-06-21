@@ -75,7 +75,7 @@ pub async fn verify_incoming(
     };
 
     if object.is_activity() {
-        let Ok(x) = object.verify_attribution(cache, conn).await else {
+        let Ok(_) = object.verify_attribution(cache, conn).await else {
             return Err(RequestVerificationError::ForgedAttribution);
         };
     }
@@ -164,9 +164,7 @@ pub async fn verify_incoming(
             "(request-target)" => Some(format!("(request-target): post {path}")),
             "host" => Some(format!("host: {instance_domain}")),
             _ => {
-                let Some(value) = request_headers.get(signed_header_name) else {
-                    return None;
-                };
+                let value = request_headers.get(signed_header_name)?;
 
                 let value = String::from_utf8(value.as_bytes().to_vec()).unwrap();
                 let x = format!("{signed_header_name}: {value}",);

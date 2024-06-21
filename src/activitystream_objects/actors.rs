@@ -7,7 +7,7 @@ use super::{core_types::*, object::Object};
 #[serde(untagged)]
 /// represents a field that could be an actor or a link
 pub enum RangeLinkActor {
-    Actor(Actor),
+    Actor(Box<Actor>),
     Link(Url),
 }
 
