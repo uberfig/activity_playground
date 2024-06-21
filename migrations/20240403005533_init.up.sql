@@ -28,7 +28,7 @@ CREATE TABLE instance_actor (
 CREATE TABLE public_keys (
 	pub_key_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL UNIQUE,
-	owner				TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	owner				TEXT NOT NULL UNIQUE REFERENCES activitypub_users(id) ON DELETE CASCADE,
 	public_key_pem		TEXT NOT NULL
 );
 

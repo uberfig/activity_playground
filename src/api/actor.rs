@@ -14,17 +14,19 @@ use openssl::{
 };
 
 use crate::{
-    activitystream_objects::OldActivity,
+    activitystream_objects::{core_types::ActivityStream, OldActivity},
     api::activities,
+    cache_and_fetch::Cache,
     db::{
-        account_creation::create_internal_actor, conn::DbConn,
-        internal_actor::get_actor_id_from_internal,
+        account_creation::create_internal_actor, actor_utilities::get_ap_actor_by_db_id,
+        conn::DbConn, internal_actor::get_actor_id_from_internal,
     },
     protocol::verification::generate_digest,
 };
 
 #[get("/actor")]
 pub async fn get_instance_actor(
+    cache: Data<Cache>,
     path: web::Path<String>,
     conn: Data<DbConn>,
     request: HttpRequest,
@@ -57,30 +59,23 @@ pub async fn get_actor(
         }
     };
 
-    // let actor = sqlx::query_as!(
-    //     DatabaseActor,
-    //     "SELECT * FROM activitypub_users WHERE ap_user_id = $1",
-    //     id
-    // )
-    // .fetch_one(&conn.db)
-    // .await
-    // .unwrap();
+    let actor = get_ap_actor_by_db_id(id, &conn).await;
+    let actor = actor.to_activitystream();
 
-    // let actor: OldActor = actor.into();
-
-    // Ok(HttpResponse::Ok()
-    //     .content_type("application/activity+json; charset=utf-8")
-    //     .body(serde_json::to_string(&actor).unwrap()))
-
-    todo!()
+    Ok(HttpResponse::Ok()
+        .content_type("application/activity+json; charset=utf-8")
+        .body(serde_json::to_string(&actor).unwrap()))
 }
 
-#[get("/create_test")]
+#[get("/create_test/{preferred_username}")]
 pub async fn create_test(
+    path: web::Path<String>,
     state: Data<crate::config::Config>,
     conn: Data<DbConn>,
 ) -> Result<HttpResponse> {
-    let x = create_internal_actor(state, conn, "hello".to_string(), "hello".to_string())
+    let preferred_username = path.into_inner();
+
+    let x = create_internal_actor(state, conn, preferred_username.clone(), preferred_username)
         .await
         .unwrap();
 
@@ -92,7 +87,7 @@ pub async fn post_test(
     // state: Data<crate::config::Config>,
     conn: Data<DbConn>,
 ) -> Result<HttpResponse> {
-    let activity: OldActivity = serde_json::from_str(activities::ACTIVITY).unwrap();
+    let activity: ActivityStream = serde_json::from_str(activities::ACTIVITY).unwrap();
 
     let val = sqlx::query!(
         "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
@@ -117,7 +112,7 @@ pub async fn post_test(
 }
 
 pub async fn post_to_inbox(
-    activity: &OldActivity,
+    activity: &ActivityStream,
     from_id: &String,
     to_domain: &String,
     to_inbox: &String,

@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::RwLock,
+    sync::{atomic::AtomicBool, RwLock},
     time::{Duration, SystemTime},
 };
 
@@ -13,7 +13,7 @@ use crate::{
     protocol::{fetch::authorized_fetch, instance_actor::InstanceActor},
 };
 
-const MAX_AGE: std::time::Duration = Duration::from_secs(40);
+// const MAX_AGE: std::time::Duration = Duration::from_secs(40);
 
 // const MAX_ADVERSE: i32 = 6;
 
@@ -25,10 +25,15 @@ pub struct DomainRequest {
     pub adverse_events: u64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CachedItem<T: Clone> {
-    pub item: T,
-    pub fetched_at: SystemTime,
+    pub item: RwLock<T>,
+    // pub fetched_at: SystemTime,
+    // pub fetched_at: SystemTime,
+    /// mark as non existent or no longer existing
+    pub tombstone: AtomicBool,
+    /// set when the item is changed in the database
+    pub stale: AtomicBool,
 }
 
 pub struct Cache {
@@ -66,30 +71,40 @@ pub async fn get_federated_object(
     cache: &Cache,
     conn: &Data<DbConn>,
 ) -> Result<ActivityStream, FetchErr> {
-    let cached = {
+    {
         let read_lock = cache.fetch.read().unwrap();
-        read_lock.get(id.as_str()).cloned()
-    };
+        let cached = read_lock.get(id.as_str());
 
-    if let Some(x) = &cached {
-        dbg!(x);
+        if let Some(x) = &cached {
+            dbg!(x);
 
-        let time = SystemTime::now();
-        let elapsed = time.duration_since(x.fetched_at);
+            if x.tombstone.load(std::sync::atomic::Ordering::Acquire) {
+                return Err(FetchErr::DoesNotExist);
+            }
 
-        let elapsed = match elapsed {
-            Ok(x) => x,
-            Err(x) => x.duration(),
-        };
+            if x.stale.load(std::sync::atomic::Ordering::Acquire) {
+                //get from db
+            } else {
+                return Ok(x.item.read().unwrap().clone());
+            }
 
-        if elapsed.as_secs() > MAX_AGE.as_secs() {
-            //get from database, it may have had an update activity or smth
-            todo!()
-        } else {
-            return Ok(x.item.clone());
+            // let time = SystemTime::now();
+            // let elapsed = time.duration_since(x.fetched_at);
+
+            // let elapsed = match elapsed {
+            //     Ok(x) => x,
+            //     Err(x) => x.duration(),
+            // };
+
+            // if elapsed.as_secs() > MAX_AGE.as_secs() {
+            //     //get from database, it may have had an update activity or smth
+            //     todo!()
+            // } else {
+            //     return Ok(x.item.clone());
+            // }
         }
     }
-
+    
     let object = authorized_fetch(
         &id,
         &cache.instance_actor.key_id,
@@ -101,15 +116,17 @@ pub async fn get_federated_object(
         Err(x) => todo!(),
     };
 
-    let time = SystemTime::now();
+    // let time = SystemTime::now();
 
     {
         let mut write_lock = cache.fetch.write().unwrap();
         write_lock.insert(
             id.as_str().to_owned(),
             CachedItem {
-                item: object.clone(),
-                fetched_at: time,
+                item: RwLock::new(object.clone()),
+                tombstone: AtomicBool::new(false),
+                stale: AtomicBool::new(false),
+                // fetched_at: time,
             },
         );
     }

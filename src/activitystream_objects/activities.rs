@@ -155,27 +155,23 @@ impl Activity {
                     Err(x) => {
                         dbg!(x);
                         return Err(());
-                    },
+                    }
                 };
                 let object = match object.get_object() {
                     Some(x) => x,
                     None => {
                         return Err(());
-                    },
+                    }
                 };
 
-                if self.extends_intransitive.actor.get_id()
-                    == object.attributed_to.get_id()
-                {
+                if self.extends_intransitive.actor.get_id() == object.attributed_to.get_id() {
                     return Ok(());
                 }
                 return Err(());
             }
             // ActivityType::Add |
             // ActivityType::Remove |
-            ActivityType::Undo |
-            ActivityType::Update |
-            ActivityType::Delete => {
+            ActivityType::Undo | ActivityType::Update | ActivityType::Delete => {
                 let Some(actor_domain) = self.extends_intransitive.actor.get_id().domain() else {
                     return Err(());
                 };

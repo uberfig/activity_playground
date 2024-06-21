@@ -1,10 +1,17 @@
 use std::collections::HashMap;
 
-use actix_web::{web, HttpRequest};
+use actix_web::{
+    web::{self, Data},
+    HttpRequest,
+};
 use openssl::hash::MessageDigest;
 use serde::{Deserialize, Serialize};
 
-use crate::activitystream_objects::VerificationActor;
+use crate::{
+    activitystream_objects::{core_types::ActivityStream, VerificationActor},
+    cache_and_fetch::Cache,
+    db::conn::DbConn,
+};
 
 pub fn generate_digest(body: &[u8]) -> String {
     let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
@@ -33,10 +40,14 @@ pub enum RequestVerificationError {
     SignatureVerifyFailed,
     NoDate,
     MissingSignedHeaderField(String),
+    BodyDeserializeErr,
+    ForgedAttribution,
 }
 
 ///verifys a request and returns the message body if its valid
 pub async fn verify_incoming(
+    cache: &Cache,
+    conn: &Data<DbConn>,
     request: HttpRequest,
     body: web::Bytes,
     path: &str,
@@ -57,6 +68,17 @@ pub async fn verify_incoming(
     let Ok(body) = String::from_utf8(body.to_vec()) else {
         return Err(RequestVerificationError::BadMessageBody);
     };
+
+    let object: Result<ActivityStream, _> = serde_json::from_str(&body);
+    let Ok(object) = object else {
+        return Err(RequestVerificationError::BodyDeserializeErr);
+    };
+
+    if object.is_activity() {
+        let Ok(x) = object.verify_attribution(cache, conn).await else {
+            return Err(RequestVerificationError::ForgedAttribution);
+        };
+    }
 
     let generated_digest = "SHA-256=".to_owned() + &generate_digest(body.as_bytes());
 

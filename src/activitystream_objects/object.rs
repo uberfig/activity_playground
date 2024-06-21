@@ -52,17 +52,26 @@ pub enum MediaType {
 pub enum ObjectType {
     Object,
     Relationship, //adds properties: subject | object | relationship
+    /// Represents any kind of multi-paragraph written work.
+    ///
+    /// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-article
     Article,
+
+    /// Represents a short written work typically less than a single paragraph in length.
+    ///
+    /// https://www.w3.org/TR/activitystreams-vocabulary/#dfn-note
+    Note,
+
     Document,
     Audio, //document type
     Image, //document type
     Video, //document type
-    Note,
-    Page, //document type
+    Page,  //document type
+
     Event,
     Place, //not used, adds  accuracy | altitude | latitude | longitude | radius | units
 
-    Profile,   // adds property describes
+    Profile,   // adds describes
     Tombstone, // adds formerType | deleted
 }
 
@@ -74,10 +83,16 @@ impl Default for ObjectType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct Object {
+pub struct ObjectWrapper {
     #[serde(rename = "type")]
     pub type_field: ObjectType,
+    #[serde(flatten)]
+    pub object: Object,
+}
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Object {
     #[serde(flatten)]
     pub id: ID,
 

@@ -13,7 +13,7 @@ use actix_web::{
     Result,
 };
 
-use crate::protocol::verification::verify_incoming;
+use crate::{cache_and_fetch::Cache, db::conn::DbConn, protocol::verification::verify_incoming};
 pub struct Inbox {
     pub inbox: Mutex<Vec<String>>,
 }
@@ -32,10 +32,20 @@ pub async fn shared_inbox(
     // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
+    cache: Data<Cache>,
+    conn: Data<DbConn>,
 ) -> Result<HttpResponse, Error> {
     dbg!(&request);
 
-    let x = verify_incoming(request, body, "/users/test/inbox", "place.ivytime.gay").await;
+    let x = verify_incoming(
+        &cache,
+        &conn,
+        request,
+        body,
+        "/users/test/inbox",
+        "place.ivytime.gay",
+    )
+    .await;
 
     match x {
         Ok(x) => {
@@ -62,6 +72,8 @@ pub async fn private_inbox(
     // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
+    cache: Data<Cache>,
+    conn: Data<DbConn>,
 ) -> Result<HttpResponse, Error> {
     // let mut guard = inbox.inbox.lock().unwrap();
     // let data = &mut *guard;
@@ -76,7 +88,15 @@ pub async fn private_inbox(
 
     dbg!(&request);
 
-    let x = verify_incoming(request, body, "/users/test/inbox", "place.ivytime.gay").await;
+    let x = verify_incoming(
+        &cache,
+        &conn,
+        request,
+        body,
+        "/users/test/inbox",
+        "place.ivytime.gay",
+    )
+    .await;
 
     match x {
         Ok(x) => {

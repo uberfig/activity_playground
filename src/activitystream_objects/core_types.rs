@@ -12,7 +12,7 @@ use super::{
     actors::Actor,
     collections::ExtendsCollection,
     link::{Link, LinkSimpleOrExpanded},
-    object::Object,
+    object::{Object, ObjectWrapper},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,7 +28,13 @@ impl ActivityStream {
             _ => None,
         }
     }
-    pub fn get_object(self) -> Option<Box<Object>> {
+    pub fn get_activity(self) -> Option<Box<ExtendsIntransitive>> {
+        match self.content.activity_stream {
+            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => Some(x),
+            _ => None,
+        }
+    }
+    pub fn get_object(self) -> Option<Box<ObjectWrapper>> {
         match self.content.activity_stream {
             RangeLinkExtendsObject::Object(ExtendsObject::Object(x)) => Some(x),
             _ => None,
@@ -38,6 +44,21 @@ impl ActivityStream {
         match self.content.activity_stream {
             RangeLinkExtendsObject::Object(x) => Some(x),
             _ => None,
+        }
+    }
+    pub fn is_activity(&self) -> bool {
+        match &self.content.activity_stream {
+            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => true,
+            _ => false,
+        }
+    }
+    pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
+        match &self.content.activity_stream {
+            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => match &**x {
+                ExtendsIntransitive::ExtendsActivity(x) => x.verify_attribution(cache, conn).await,
+                _ => Ok(()),
+            },
+            _ => Ok(()),
         }
     }
 }
@@ -65,7 +86,7 @@ pub enum Context {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ExtendsObject {
-    Object(Box<Object>),
+    Object(Box<ObjectWrapper>),
     ExtendsIntransitive(Box<ExtendsIntransitive>),
     ExtendsCollection(Box<ExtendsCollection>),
     Actor(Box<Actor>),
@@ -76,7 +97,7 @@ impl ExtendsObject {
         let ExtendsObject::Object(object) = self else {
             return None;
         };
-        return Some(&object);
+        return Some(&object.object);
     }
     pub fn get_activity(&self) -> Option<&ExtendsIntransitive> {
         let ExtendsObject::ExtendsIntransitive(activity) = self else {
@@ -86,7 +107,7 @@ impl ExtendsObject {
     }
     pub fn get_id(&self) -> &Url {
         match self {
-            ExtendsObject::Object(x) => &x.id.id,
+            ExtendsObject::Object(x) => &x.object.id.id,
             ExtendsObject::ExtendsIntransitive(x) => x.get_id(),
             ExtendsObject::ExtendsCollection(x) => todo!(),
             ExtendsObject::Actor(x) => &x.extends_object.id.id,
@@ -146,7 +167,7 @@ impl RangeLinkExtendsObject {
                     }
                     Err(x) => Err(ConcreteErr::FetchErr(x)),
                 }
-            },
+            }
         }
     }
     pub fn get_id(&self) -> &Url {
@@ -161,7 +182,7 @@ impl RangeLinkExtendsObject {
 #[serde(untagged)]
 /// represents a field that could be an object or a link
 pub enum RangeLinkObject {
-    Object(Object),
+    Object(ObjectWrapper),
     Link(LinkSimpleOrExpanded),
 }
 
@@ -173,7 +194,7 @@ pub enum ConcreteErr {
 impl RangeLinkObject {
     pub fn get_id(&self) -> &Url {
         match self {
-            RangeLinkObject::Object(x) => &x.id.id,
+            RangeLinkObject::Object(x) => &x.object.id.id,
             RangeLinkObject::Link(x) => x.get_id(),
         }
     }
@@ -181,7 +202,7 @@ impl RangeLinkObject {
         &self,
         cache: &Cache,
         conn: &Data<DbConn>,
-    ) -> Result<Object, ConcreteErr> {
+    ) -> Result<ObjectWrapper, ConcreteErr> {
         match self {
             RangeLinkObject::Object(x) => Ok(x.clone()),
             RangeLinkObject::Link(x) => {

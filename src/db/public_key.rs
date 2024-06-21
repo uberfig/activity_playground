@@ -1,6 +1,6 @@
 use sqlx::query;
 
-use crate::activitystream_objects::actors::Actor;
+use crate::activitystream_objects::actors::{Actor, PublicKey};
 
 pub async fn insert_public_key<'e, 'c: 'e, E>(
     executor: E,
@@ -48,4 +48,23 @@ where
         &actor.public_key.public_key_pem,
     )
     .await
+}
+
+pub async fn get_actor_public_key<'e, 'c: 'e, E>(
+    executor: E,
+    owner: &str,
+) -> Result<PublicKey, sqlx::Error>
+where
+    E: 'e + sqlx::PgExecutor<'c>,
+{
+    let key = sqlx::query!("SELECT * FROM public_keys WHERE owner = $1", owner)
+        .fetch_one(executor)
+        .await
+        .unwrap();
+
+    Ok(PublicKey {
+        id: key.id,
+        owner: key.owner,
+        public_key_pem: key.public_key_pem,
+    })
 }
