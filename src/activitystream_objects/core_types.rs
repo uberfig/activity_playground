@@ -58,6 +58,24 @@ impl ActivityStream {
             _ => Ok(()),
         }
     }
+    pub fn get_owner(&self) -> Option<&Url> {
+        match &self.content.activity_stream {
+            RangeLinkExtendsObject::Object(x) => {
+                match x {
+                    ExtendsObject::Object(x) => {
+                        match &x.object.attributed_to {
+                            Some(x) => Some(x.get_id()),
+                            None => None,
+                        }
+                    },
+                    ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
+                    ExtendsObject::ExtendsCollection(_) => None,
+                    ExtendsObject::Actor(x) => Some(x.get_id()),
+                }
+            },
+            RangeLinkExtendsObject::Link(x) => todo!(),
+        }
+    }
 }
 
 //-------------------glue--------------

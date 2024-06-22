@@ -94,6 +94,9 @@ impl Actor {
             },
         }
     }
+    pub fn get_id(&self) -> &Url {
+        &self.extends_object.id.id
+    }
 }
 
 impl From<Actor> for ActivityStream {

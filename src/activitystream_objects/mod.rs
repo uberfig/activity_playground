@@ -7,6 +7,7 @@ pub mod object;
 
 use actors::PublicKey;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 //-----------old implimentation kept in this file until I get rid of it, depreciated----------------
 
@@ -67,7 +68,7 @@ pub struct OldActor {
 #[serde(rename_all = "camelCase")]
 ///Actor type for just deserializing the useful bits for verifying post came from an actor
 pub struct VerificationActor {
-    pub id: String,
+    pub id: Url,
     #[serde(rename = "type")]
     pub type_field: OldActorType,
     pub preferred_username: String,

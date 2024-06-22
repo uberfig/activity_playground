@@ -42,6 +42,7 @@ pub enum RequestVerificationError {
     MissingSignedHeaderField(String),
     BodyDeserializeErr,
     ForgedAttribution,
+    KeyOwnerDoesNotMatch,
 }
 
 ///verifys a request and returns the message body if its valid
@@ -143,6 +144,12 @@ pub async fn verify_incoming(
         dbg!(&actor);
         return Err(RequestVerificationError::ActorDeserializeFailed);
     };
+
+    if let Some(x) = object.get_owner() {
+        if actor.id.ne(x) {
+            return Err(RequestVerificationError::KeyOwnerDoesNotMatch);
+        }
+    }
 
     let key =
         openssl::rsa::Rsa::public_key_from_pem(actor.public_key.public_key_pem.as_bytes()).unwrap();
