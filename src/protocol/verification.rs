@@ -135,10 +135,6 @@ pub async fn verify_incoming(
         return Err(RequestVerificationError::ActorFetchBodyFailed);
     };
 
-    println!(
-        "\nline 115:\n{}\n\n",
-        String::from_utf8(actor.to_vec()).unwrap()
-    );
     let actor: Result<VerificationActor, _> = serde_json::from_slice(&actor);
     let Ok(actor) = actor else {
         dbg!(&actor);
