@@ -177,6 +177,15 @@ impl Object {
             ..Default::default()
         }
     }
+    pub fn get_attributed_to(&self) -> Option<&Url> {
+        match &self.attributed_to {
+            Some(x) => match x {
+                RangeLinkActor::Actor(x) => Some(x.get_id()),
+                RangeLinkActor::Link(x) => Some(x),
+            },
+            None => None,
+        }
+    }
     pub fn attributed_to_link(mut self, attributed_to: Option<Url>) -> Self {
         match attributed_to {
             Some(x) => {

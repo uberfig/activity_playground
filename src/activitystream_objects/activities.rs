@@ -73,6 +73,7 @@ impl ExtendsIntransitive {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+/// we are not using these for this project
 pub enum IntransitiveType {
     IntransitiveActivity,
     /// An [`IntransitiveActivity`] that indicates that the actor has
@@ -95,16 +96,15 @@ pub enum IntransitiveType {
 pub struct IntransitiveActivity {
     // #[serde(rename = "type")]
     // pub type_field: IntransitiveType,
-
     #[serde(flatten)]
     pub extends_object: Object,
-    pub actor: RangeLinkActor,      //TODO
+    pub actor: RangeLinkActor, //TODO
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub target: Option<String>,     //TODO
+    pub target: Option<String>, //TODO
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub result: Option<String>,     //TODO
+    pub result: Option<String>, //TODO
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub origin: Option<String>,     //TODO
+    pub origin: Option<String>, //TODO
     #[serde(skip_serializing_if = "Option::is_none")]
     pub instrument: Option<String>, //TODO
 }
@@ -155,6 +155,9 @@ pub struct Question {
     #[serde(flatten)]
     pub options: ChoiceType,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// indicates that a poll can only be voted on by local users
+    pub local_only: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub closed: Option<String>, //TODO
 }
 
@@ -182,7 +185,7 @@ impl Activity {
                         return Err(());
                     }
                 };
-                let object = match object.get_object() {
+                let object = match object.get_as_object() {
                     Some(x) => x,
                     None => {
                         return Err(());

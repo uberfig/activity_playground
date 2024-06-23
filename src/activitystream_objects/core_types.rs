@@ -106,13 +106,13 @@ pub enum ExtendsObject {
 }
 
 impl ExtendsObject {
-    pub fn get_object(&self) -> Option<&Object> {
+    pub fn get_as_object(&self) -> Option<&Object> {
         let ExtendsObject::Object(object) = self else {
             return None;
         };
         Some(&object.object)
     }
-    pub fn get_activity(&self) -> Option<&ExtendsIntransitive> {
+    pub fn get_as_activity(&self) -> Option<&ExtendsIntransitive> {
         let ExtendsObject::ExtendsIntransitive(activity) = self else {
             return None;
         };

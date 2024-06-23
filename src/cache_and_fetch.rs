@@ -39,7 +39,7 @@ pub struct Cache {
     pub state: crate::config::Config,
     pub instance_actor: InstanceActor,
     pub domains: RwLock<HashMap<String, DomainRequest>>,
-    pub outgoing_cache: RwLock<HashMap<String, String>>, //cache of objects being externally requested
+    // pub outgoing_cache: RwLock<HashMap<String, String>>, //cache of objects being externally requested
     pub fetch: RwLock<HashMap<String, CachedItem<ActivityStream>>>, //cache of objects being fetched
 }
 
@@ -49,7 +49,7 @@ impl Cache {
             state,
             instance_actor,
             domains: RwLock::new(HashMap::new()),
-            outgoing_cache: RwLock::new(HashMap::new()),
+            // outgoing_cache: RwLock::new(HashMap::new()),
             fetch: RwLock::new(HashMap::new()),
         }
     }
@@ -82,7 +82,14 @@ pub async fn get_federated_object(
             }
 
             if x.stale.load(std::sync::atomic::Ordering::Acquire) {
-                //get from db
+                {
+                    let mut lock = x.item.write().unwrap();
+                    if !x.stale.load(std::sync::atomic::Ordering::Acquire) {
+                        //in the time it took to get a lock, someone got there first and fixed it
+                        return Ok(lock.clone());
+                    }
+                    //get from db
+                }
             } else {
                 return Ok(x.item.read().unwrap().clone());
             }

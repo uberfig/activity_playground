@@ -1,6 +1,7 @@
 CREATE TABLE activitypub_users (
 	ap_user_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL UNIQUE,
+	local				BOOLEAN NOT NULL,
 	type_field			TEXT NOT NULL DEFAULT 'Person',
 	preferred_username	TEXT NOT NULL,
 	domain				TEXT NOT NULL,
@@ -46,24 +47,33 @@ CREATE TABLE following (
 	PRIMARY KEY (actor, following)
 );
 
+CREATE TABLE objects (
+	obj_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+	id			TEXT NULL UNIQUE,
+	domain		TEXT NOT NULL,
+
+	internal_type			TEXT NOT NULL, -- can be Object, Question, or whatever is represented
+	activitystream_type		TEXT NOT NULL, 
+
+	ap_user_id	BIGINT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE -- used to represent the owner
+	-- obj_id	BIGINT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE
+);
+
 CREATE TABLE files (
 	file_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE
 );
 
 CREATE TABLE activity_objects (
-	obj_id		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
+	obj_id		BIGINT PRIMARY KEY NOT NULL UNIQUE REFERENCES objects(obj_id) ON DELETE CASCADE,
 
 	type_field		TEXT NOT NULL DEFAULT 'Note',
 	id				TEXT NOT NULL UNIQUE,
-
 	name			TEXT NULL,
 	-- attachment
-	attributedTo	TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	attributedTo	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	content			TEXT,
 	
-	actor 			TEXT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
-	published		BIGINT,
-
-	content			TEXT
+	published		BIGINT
 );
 
 CREATE TABLE attachments (
@@ -75,11 +85,5 @@ CREATE TABLE attachments (
 	file_id			BIGINT NOT NULL REFERENCES files(file_id) ON DELETE CASCADE
 );
 
-CREATE TABLE objects (
-	id			TEXT PRIMARY KEY NOT NULL UNIQUE,
-	type		TEXT NOT NULL,
 
-	ap_user_id	BIGINT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE,
-	obj_id	BIGINT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE
-);
 

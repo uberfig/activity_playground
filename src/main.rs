@@ -10,6 +10,7 @@ use activity_playground::{
         activities::{get_activity, get_object},
         actor::{create_test, get_actor, post_test},
         inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
+        outbox::{self, private_outbox, shared_outbox},
         webfinger::webfinger,
     },
     cache_and_fetch::Cache,
@@ -52,25 +53,24 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    //     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
+    //         .name(Some("hello".to_string()))
+    //         .to_activitystream();
+    //     let test = serde_json::to_string_pretty(&test).unwrap();
+    //     println!("{test}");
 
-//     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
-//         .name(Some("hello".to_string()))
-//         .to_activitystream();
-//     let test = serde_json::to_string_pretty(&test).unwrap();
-//     println!("{test}");
-
-//     let deserialized: ActivityStream = serde_json::from_str(
-//         r#"{
-//   "@context": [
-//     "test1",
-//     "test2"
-//   ],
-//   "type": "Object",
-//   "id": "https://test.com/hi",
-//   "name": "hello"
-// }"#,
-//     )
-//     .unwrap();
+    //     let deserialized: ActivityStream = serde_json::from_str(
+    //         r#"{
+    //   "@context": [
+    //     "test1",
+    //     "test2"
+    //   ],
+    //   "type": "Object",
+    //   "id": "https://test.com/hi",
+    //   "name": "hello"
+    // }"#,
+    //     )
+    //     .unwrap();
 
     // let test = Question {
     //     type_field: activity_playground::activitystream_objects::activities::QuestionType::Question,
@@ -217,6 +217,8 @@ async fn main() -> std::io::Result<()> {
             .service(shared_inbox)
             .service(private_inbox)
             .service(inspect_inbox)
+            .service(shared_outbox)
+            .service(private_outbox)
     })
     .bind((bind, port))?
     .run()
