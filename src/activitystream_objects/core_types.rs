@@ -47,7 +47,10 @@ impl ActivityStream {
         }
     }
     pub fn is_activity(&self) -> bool {
-        matches!(&self.content.activity_stream, RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(_)))
+        matches!(
+            &self.content.activity_stream,
+            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(_))
+        )
     }
     pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
         match &self.content.activity_stream {
@@ -60,18 +63,14 @@ impl ActivityStream {
     }
     pub fn get_owner(&self) -> Option<&Url> {
         match &self.content.activity_stream {
-            RangeLinkExtendsObject::Object(x) => {
-                match x {
-                    ExtendsObject::Object(x) => {
-                        match &x.object.attributed_to {
-                            Some(x) => Some(x.get_id()),
-                            None => None,
-                        }
-                    },
-                    ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
-                    ExtendsObject::ExtendsCollection(_) => None,
-                    ExtendsObject::Actor(x) => Some(x.get_id()),
-                }
+            RangeLinkExtendsObject::Object(x) => match x {
+                ExtendsObject::Object(x) => match &x.object.attributed_to {
+                    Some(x) => Some(x.get_id()),
+                    None => None,
+                },
+                ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
+                ExtendsObject::ExtendsCollection(_) => None,
+                ExtendsObject::Actor(x) => Some(x.get_id()),
             },
             RangeLinkExtendsObject::Link(x) => todo!(),
         }
@@ -82,17 +81,16 @@ impl ActivityStream {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// wraps base object to include context
 pub struct ContextWrap {
-    #[serde(flatten)]
+    #[serde(rename = "@context")]
     pub context: Context,
     #[serde(flatten)]
     pub activity_stream: RangeLinkExtendsObject,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum Context {
-    #[serde(rename = "@context")]
     Array(Vec<String>),
-    #[serde(rename = "@context")]
     Single(String),
 }
 

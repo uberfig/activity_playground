@@ -40,6 +40,12 @@ CREATE TABLE internal_users (
 	private_key		TEXT NOT NULL
 );
 
+CREATE TABLE following (
+	actor		TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	following	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
+	PRIMARY KEY (actor, following)
+);
+
 CREATE TABLE files (
 	file_id 		BIGSERIAL PRIMARY KEY NOT NULL UNIQUE
 );

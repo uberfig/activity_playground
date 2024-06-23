@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use activity_playground::{
     activitystream_objects::{
+        activities::{ChoiceType, IntransitiveActivity, Question, QuestionOption},
         core_types::ActivityStream,
         object::Object,
     },
@@ -51,32 +52,67 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // let test = ActivityStream::Object(Object { context: Context::Array(vec!["hi".to_string(), "hello".to_string()]), id: "hi".to_string(), name: "hi".to_string() });
-    // println!("{}", serde_json::to_string(&test).unwrap());
 
-    let test = Object::new(Url::parse("https://test.com/hi").unwrap())
-        .name(Some("hello".to_string()))
-        .to_activitystream();
-    let test = serde_json::to_string_pretty(&test).unwrap();
-    println!("{test}");
+//     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
+//         .name(Some("hello".to_string()))
+//         .to_activitystream();
+//     let test = serde_json::to_string_pretty(&test).unwrap();
+//     println!("{test}");
+
+//     let deserialized: ActivityStream = serde_json::from_str(
+//         r#"{
+//   "@context": [
+//     "test1",
+//     "test2"
+//   ],
+//   "type": "Object",
+//   "id": "https://test.com/hi",
+//   "name": "hello"
+// }"#,
+//     )
+//     .unwrap();
+
+    // let test = Question {
+    //     type_field: activity_playground::activitystream_objects::activities::QuestionType::Question,
+    //     extends_intransitive: IntransitiveActivity {
+    //         type_field: todo!(),
+    //         extends_object: todo!(),
+    //         actor: todo!(),
+    //         target: todo!(),
+    //         result: todo!(),
+    //         origin: todo!(),
+    //         instrument: todo!(),
+    //     },
+    //     options: todo!(),
+    //     closed: todo!(),
+    // };
 
     let deserialized: ActivityStream = serde_json::from_str(
         r#"{
-  "@context": [
-    "test1",
-    "test2"
-  ],
-  "type": "Object",
-  "id": "https://test.com/hi",
-  "name": "hello"
-}"#,)
+            "@context": ["https://www.w3.org/ns/activitystreams"],
+            "type": "Question",
+            "id": "https://example.com",
+            "name": "What is the answer?",
+            "actor": "https://example.com",
+            "anyOf": [
+              {
+                "type": "Note",
+                "name": "Option A"
+              },
+              {
+                "type": "Note",
+                "name": "Option B"
+              }
+            ]
+          }"#,
+    )
     .unwrap();
 
     // let deserialized: ActivityStream = serde_json::from_str(
     //     r#"{"type":"Object","@context":["https://context1.com","https://context2.com"],"id":"hi","name":"hi"}"#,
     // )
     // .unwrap();
-    dbg!(&deserialized);
+    // dbg!(&deserialized);
 
     let test = serde_json::to_string_pretty(&deserialized).unwrap();
 

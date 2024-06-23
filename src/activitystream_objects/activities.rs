@@ -51,7 +51,7 @@ use super::{
 #[serde(untagged)]
 pub enum ExtendsIntransitive {
     ExtendsActivity(Activity),
-    IntransitiveActivity(IntransitiveActivity),
+    // IntransitiveActivity(IntransitiveActivity),
     Question(Question),
 }
 
@@ -59,14 +59,14 @@ impl ExtendsIntransitive {
     pub fn get_actor(&self) -> &Url {
         match self {
             ExtendsIntransitive::ExtendsActivity(x) => &x.extends_intransitive.extends_object.id.id,
-            ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
+            // ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
             ExtendsIntransitive::Question(x) => &x.extends_intransitive.extends_object.id.id,
         }
     }
     pub fn get_id(&self) -> &Url {
         match self {
             ExtendsIntransitive::ExtendsActivity(x) => &x.extends_intransitive.extends_object.id.id,
-            ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
+            // ExtendsIntransitive::IntransitiveActivity(x) => &x.extends_object.id.id,
             ExtendsIntransitive::Question(x) => &x.extends_intransitive.extends_object.id.id,
         }
     }
@@ -93,21 +93,45 @@ pub enum IntransitiveType {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct IntransitiveActivity {
-    #[serde(rename = "type")]
-    pub type_field: IntransitiveType,
+    // #[serde(rename = "type")]
+    // pub type_field: IntransitiveType,
 
     #[serde(flatten)]
     pub extends_object: Object,
     pub actor: RangeLinkActor,      //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<String>,     //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<String>,     //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,     //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub instrument: Option<String>, //TODO
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum QuestionType {
     Question,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum ChoiceType {
+    AnyOf(Vec<QuestionOption>),
+    OneOf(Vec<QuestionOption>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum QuestionOptionType {
+    Note,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct QuestionOption {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub type_field: QuestionOptionType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -128,8 +152,9 @@ pub struct Question {
     pub type_field: QuestionType,
     #[serde(flatten)]
     pub extends_intransitive: IntransitiveActivity,
-    pub one_of: Option<String>, //TODO
-    pub any_of: Option<String>, //TODO
+    #[serde(flatten)]
+    pub options: ChoiceType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub closed: Option<String>, //TODO
 }
 

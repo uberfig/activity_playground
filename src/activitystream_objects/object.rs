@@ -39,7 +39,7 @@ impl From<ID> for Url {
 impl Default for ID {
     fn default() -> Self {
         Self {
-            id: Url::parse("invalid").unwrap(),
+            id: Url::parse("https://invalid.com").unwrap(),
         }
     }
 }

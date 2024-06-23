@@ -34,6 +34,7 @@ pub async fn shared_inbox(
     body: web::Bytes,
     cache: Data<Cache>,
     conn: Data<DbConn>,
+    state: Data<crate::config::Config>,
 ) -> Result<HttpResponse, Error> {
     dbg!(&request);
 
@@ -42,8 +43,8 @@ pub async fn shared_inbox(
         &conn,
         request,
         body,
-        "/users/test/inbox",
-        "place.ivytime.gay",
+        "/inbox",
+        &state.instance_domain,
     )
     .await;
 
@@ -69,12 +70,16 @@ pub async fn shared_inbox(
 #[post("/users/{preferred_username}/inbox")]
 pub async fn private_inbox(
     request: HttpRequest,
+    path: web::Path<String>,
     // conn: Data<DbConn>,
     inbox: Data<Inbox>,
     body: web::Bytes,
     cache: Data<Cache>,
     conn: Data<DbConn>,
+    state: Data<crate::config::Config>,
 ) -> Result<HttpResponse, Error> {
+    let preferred_username = path.into_inner();
+    let path = format!("/users/{}/inbox", &preferred_username);
     // let mut guard = inbox.inbox.lock().unwrap();
     // let data = &mut *guard;
 
@@ -88,15 +93,7 @@ pub async fn private_inbox(
 
     dbg!(&request);
 
-    let x = verify_incoming(
-        &cache,
-        &conn,
-        request,
-        body,
-        "/users/test/inbox",
-        "place.ivytime.gay",
-    )
-    .await;
+    let x = verify_incoming(&cache, &conn, request, body, &path, &state.instance_domain).await;
 
     match x {
         Ok(x) => {
