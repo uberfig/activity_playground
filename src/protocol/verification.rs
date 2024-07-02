@@ -8,7 +8,7 @@ use openssl::hash::MessageDigest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    activitystream_objects::{core_types::ActivityStream, VerificationActor},
+    activitystream_objects::{actors::Actor, core_types::ActivityStream},
     cache_and_fetch::Cache,
     db::conn::DbConn,
 };
@@ -135,14 +135,14 @@ pub async fn verify_incoming(
         return Err(RequestVerificationError::ActorFetchBodyFailed);
     };
 
-    let actor: Result<VerificationActor, _> = serde_json::from_slice(&actor);
+    let actor: Result<Actor, _> = serde_json::from_slice(&actor);
     let Ok(actor) = actor else {
         dbg!(&actor);
         return Err(RequestVerificationError::ActorDeserializeFailed);
     };
 
     if let Some(x) = object.get_owner() {
-        if actor.id.ne(x) {
+        if actor.get_id().ne(x) {
             return Err(RequestVerificationError::KeyOwnerDoesNotMatch);
         }
     }

@@ -112,7 +112,10 @@ pub async fn get_ap_actor_by_db_id(id: i64, conn: &Data<DbConn>) -> Actor {
     }
 }
 
-pub async fn get_ap_actor_by_fedi_id(id: &str, conn: &mut sqlx::Transaction<'_, sqlx::Postgres>,) -> Actor {
+pub async fn get_ap_actor_by_fedi_id(
+    id: &str,
+    conn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Actor {
     let actor = sqlx::query!("SELECT * FROM activitypub_users WHERE id = $1", id)
         .fetch_one(&mut **conn)
         .await

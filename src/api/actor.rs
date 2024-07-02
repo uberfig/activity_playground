@@ -14,7 +14,7 @@ use openssl::{
 };
 
 use crate::{
-    activitystream_objects::{core_types::ActivityStream, OldActivity},
+    activitystream_objects::core_types::ActivityStream,
     api::activities,
     cache_and_fetch::Cache,
     db::{

@@ -88,6 +88,19 @@ pub struct ObjectWrapper {
     pub object: Object,
 }
 
+impl ObjectWrapper {
+    pub fn to_activitystream(self) -> ActivityStream {
+        ActivityStream {
+            content: ContextWrap {
+                context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
+                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
+                    self,
+                ))),
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Object {
@@ -202,13 +215,27 @@ impl Object {
         self.name = name;
         self
     }
-    pub fn to_activitystream(self) -> ActivityStream {
+    pub fn content(mut self, content: Option<String>) -> Self {
+        self.content = content;
+        self
+    }
+    pub fn published(mut self, published: Option<xsd_types::DateTime>) -> Self {
+        self.published = published;
+        self
+    }
+    pub fn wrap(self, obj_type: ObjectType) -> ObjectWrapper {
+        ObjectWrapper {
+            type_field: obj_type,
+            object: self,
+        }
+    }
+    pub fn to_activitystream(self, obj_type: ObjectType) -> ActivityStream {
         ActivityStream {
             content: ContextWrap {
                 context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
                 activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
                     ObjectWrapper {
-                        type_field: ObjectType::Object,
+                        type_field: obj_type,
                         object: self,
                     },
                 ))),

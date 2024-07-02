@@ -1,11 +1,10 @@
+use crate::db::{conn::DbConn, objects::get_object_by_db_id};
 use actix_web::{
     error::ErrorNotFound,
     get,
     web::{self, Data},
     HttpRequest, HttpResponse, Result,
 };
-use crate::db::{conn::DbConn, objects::get_object_by_db_id};
-
 
 #[get("/users/{preferred_username}/statuses/{id}")]
 pub async fn get_object(
@@ -20,9 +19,13 @@ pub async fn get_object(
     dbg!(request);
     dbg!(&body);
 
-    let (preferred_username, object_id) = path.into_inner();
+    let (_preferred_username, object_id) = path.into_inner();
 
-    let object = get_object_by_db_id(object_id, conn.db.begin().await.unwrap(), &preferred_username).await;
+    let object = get_object_by_db_id(
+        object_id,
+        conn.db.begin().await.unwrap(),
+    )
+    .await;
 
     let object = match object {
         Some(x) => x,

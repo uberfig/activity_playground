@@ -2,15 +2,20 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use sqlx::query;
+use url::Url;
 
-use crate::{activitystream_objects::{
-    activities::Question, core_types::ActivityStream, object::Object
-}, db::actor_utilities::get_ap_actor_by_fedi_id};
-
+use crate::{
+    activitystream_objects::{
+        activities::Question,
+        core_types::ActivityStream,
+        object::{Object, ObjectType, ObjectWrapper},
+    },
+    db::actor_utilities::get_ap_actor_by_fedi_id,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum DbObject {
-    Object(Object),
+    Object(ObjectWrapper),
     Question(Question),
 }
 
@@ -42,22 +47,26 @@ pub async fn create_new_object(
     mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
     domain: &str,
 ) -> Result<i64, InsertErr> {
-
     let val = match object {
         DbObject::Object(x) => {
-            let Some(actor_fedi_id) = x.get_attributed_to() else {
+            let Some(actor_fedi_id) = x.object.get_attributed_to() else {
                 return Err(InsertErr::NoAttribution);
             };
             let actor = get_ap_actor_by_fedi_id(actor_fedi_id.as_str(), &mut transaction).await;
-            let actor_id = actor.ap_user_id.expect("actor fetched from the db did not contain an actor id");
+            let actor_id = actor
+                .ap_user_id
+                .expect("actor fetched from the db did not contain an actor id");
 
-            let published = match x.published {
+            let published = match x.object.published {
                 Some(x) => x.earliest().timestamp_millis(),
-                None => SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64,
+                None => SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as i64,
             };
 
             let internal_type = serde_json::to_string(&InternalTypes::Object).unwrap();
-            let activitystream_type = serde_json::to_string(&InternalTypes::Object).unwrap();
+            let activitystream_type = serde_json::to_string(&x.type_field).unwrap();
             let val = query!(
                 r#"INSERT INTO objects 
                             (domain, internal_type, activitystream_type, ap_user_id, published)
@@ -73,9 +82,12 @@ pub async fn create_new_object(
             )
             .fetch_one(&mut *transaction)
             .await;
-            
+
             let obj_id = val.unwrap().obj_id;
-            let id_link = format!("https://{}/users/{}/statuses/{}", domain, actor.preferred_username, obj_id);
+            let id_link = format!(
+                "https://{}/users/{}/statuses/{}",
+                domain, actor.preferred_username, obj_id
+            );
 
             let _result = query!(
                 "UPDATE objects SET id = $1 WHERE obj_id = $2",
@@ -94,9 +106,9 @@ pub async fn create_new_object(
                 obj_id,
                 activitystream_type,
                 &id_link,
-                x.name,
+                x.object.name,
                 actor_fedi_id.as_str(),
-                x.content,
+                x.object.content,
                 published
             )
             .execute(&mut *transaction)
@@ -115,70 +127,41 @@ pub async fn create_new_object(
 pub async fn get_object_by_db_id(
     obj_id: i64,
     mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
-    domain: &str,
 ) -> Option<DbObject> {
+    let object = query!(r#"SELECT * FROM objects WHERE obj_id = $1"#, obj_id)
+        .fetch_optional(&mut *transaction)
+        .await;
 
-    todo!()
+    let Some(object) = object.unwrap() else {
+        return None;
+    };
+
+    let deserialized: InternalTypes = serde_json::from_str(&object.internal_type)
+        .expect("could not deserialize internal_type from db");
+
+    match deserialized {
+        InternalTypes::Object => {
+            let object = query!(
+                r#"SELECT * FROM activity_objects WHERE obj_id = $1"#,
+                obj_id
+            )
+            .fetch_optional(&mut *transaction)
+            .await
+            .unwrap()
+            .expect("item exists in objects as type object but does not exist in activity_objects");
+
+            let obj_type: ObjectType = serde_json::from_str(&object.type_field).expect("invalid object type stored in db");
+
+            let output = Object::new(Url::parse(&object.id).expect("invalid url stored in db"))
+                .attributed_to_link(Some(
+                    Url::parse(&object.attributedto).expect("invalid actor url stored in db"),
+                ))
+                .name(object.name)
+                .content(object.content)
+                .wrap(obj_type);
+
+            Some(DbObject::Object(output))
+        }
+        InternalTypes::Question => todo!(),
+    }
 }
-
-// /// must be run with a transaction
-// pub async fn insert_object<'e, 'c: 'e, E>(
-//     executor: E,
-//     object: &DbObject,
-//     domain: &str,
-// ) -> Result<i64, InsertErr>
-// where
-//     E: 'e + sqlx::PgExecutor<'c>,
-// {
-//     let val = query!(
-//         r#"INSERT INTO objects
-//             (preferred_username, domain, inbox, outbox, followers, following, liked)
-//         VALUES
-//             ($1, $2, $3, $4, $5, $6, $7, $8 )
-//         RETURNING ap_user_id
-//         "#,
-//         actor_id,
-//         actor.preferred_username,
-//         domain,
-//         actor.inbox,
-//         actor.outbox,
-//         actor.followers,
-//         actor.following,
-//         actor.liked
-//     )
-//     .fetch_one(executor)
-//     .await;
-
-//     match val {
-//         Ok(x) => return Ok(x.ap_user_id),
-//         Err(x) => return Err(InsertErr::DbErr(x)),
-//     }
-// }
-
-// pub async fn get_object_by_db_id(id: i64, conn: &Data<DbConn>) -> Option<DbObject> {
-//     let actor = sqlx::query!("SELECT * FROM activitypub_users WHERE ap_user_id = $1", id)
-//         .fetch_one(&conn.db)
-//         .await
-//         .unwrap();
-//     // let test = actor.type_field;
-//     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
-//     let type_field = type_field.expect("somehow an invalid actor type got into the db");
-
-//     let object = Object::new(url::Url::parse(&actor.id).unwrap());
-
-//     let public_key = get_actor_public_key(&conn.db, &actor.id).await.unwrap();
-
-//     Actor {
-//         type_field,
-//         preferred_username: actor.preferred_username,
-//         extends_object: object,
-//         public_key,
-//         inbox: actor.inbox,
-//         outbox: actor.outbox,
-//         followers: actor.followers,
-//         following: actor.following,
-//         ap_user_id: Some(actor.ap_user_id),
-//         domain: Some(actor.domain),
-//         liked: actor.liked,
-//     }
-// }
