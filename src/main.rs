@@ -219,6 +219,7 @@ async fn main() -> std::io::Result<()> {
             .service(inspect_inbox)
             .service(shared_outbox)
             .service(private_outbox)
+            .service(get_object)
     })
     .bind((bind, port))?
     .run()
