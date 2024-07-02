@@ -111,3 +111,31 @@ pub async fn get_ap_actor_by_db_id(id: i64, conn: &Data<DbConn>) -> Actor {
         liked: actor.liked,
     }
 }
+
+pub async fn get_ap_actor_by_fedi_id(id: &str, conn: &mut sqlx::Transaction<'_, sqlx::Postgres>,) -> Actor {
+    let actor = sqlx::query!("SELECT * FROM activitypub_users WHERE id = $1", id)
+        .fetch_one(&mut **conn)
+        .await
+        .unwrap();
+    // let test = actor.type_field;
+    let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
+    let type_field = type_field.expect("somehow an invalid actor type got into the db");
+
+    let object = Object::new(url::Url::parse(&actor.id).unwrap());
+
+    let public_key = get_actor_public_key(&mut **conn, &actor.id).await.unwrap();
+
+    Actor {
+        type_field,
+        preferred_username: actor.preferred_username,
+        extends_object: object,
+        public_key,
+        inbox: actor.inbox,
+        outbox: actor.outbox,
+        followers: actor.followers,
+        following: actor.following,
+        ap_user_id: Some(actor.ap_user_id),
+        domain: Some(actor.domain),
+        liked: actor.liked,
+    }
+}

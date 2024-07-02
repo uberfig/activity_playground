@@ -205,7 +205,7 @@ impl Object {
     pub fn to_activitystream(self) -> ActivityStream {
         ActivityStream {
             content: ContextWrap {
-                context: Context::Array(vec!["test1".to_string(), "test2".to_string()]),
+                context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
                 activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
                     ObjectWrapper {
                         type_field: ObjectType::Object,

@@ -1,19 +1,26 @@
-use actix_web::web::Data;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use serde::{Deserialize, Serialize};
 use sqlx::query;
 
-use crate::activitystream_objects::{
-    activities::Question,
-    actors::Actor,
-    object::{self, Object},
-};
+use crate::{activitystream_objects::{
+    activities::Question, core_types::ActivityStream, object::Object
+}, db::actor_utilities::get_ap_actor_by_fedi_id};
 
-use super::conn::DbConn;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum DbObject {
     Object(Object),
     Question(Question),
+}
+
+impl DbObject {
+    pub fn to_activitystream(self) -> ActivityStream {
+        match self {
+            DbObject::Object(x) => x.to_activitystream(),
+            DbObject::Question(_) => todo!(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -26,89 +33,91 @@ pub enum InsertErr {
     NoDomain,
     DbErr(sqlx::Error),
     NoPublishDate,
+    NoAttribution,
 }
 
 ///inserts an object and returns its id
-pub async fn create_internal_object(
+pub async fn create_new_object(
     object: &DbObject,
-    // conn: &Data<DbConn>,
     mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
     domain: &str,
-    actor_id: i64,
 ) -> Result<i64, InsertErr> {
-    // let mut transaction: sqlx::Transaction<'_, sqlx::Postgres> = conn.db.begin().await.unwrap();
 
     let val = match object {
         DbObject::Object(x) => {
+            let Some(actor_fedi_id) = x.get_attributed_to() else {
+                return Err(InsertErr::NoAttribution);
+            };
+            let actor = get_ap_actor_by_fedi_id(actor_fedi_id.as_str(), &mut transaction).await;
+            let actor_id = actor.ap_user_id.expect("actor fetched from the db did not contain an actor id");
+
+            let published = match x.published {
+                Some(x) => x.earliest().timestamp_millis(),
+                None => SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64,
+            };
+
             let internal_type = serde_json::to_string(&InternalTypes::Object).unwrap();
             let activitystream_type = serde_json::to_string(&InternalTypes::Object).unwrap();
             let val = query!(
                 r#"INSERT INTO objects 
-                            (domain, internal_type, activitystream_type, ap_user_id)
+                            (domain, internal_type, activitystream_type, ap_user_id, published)
                         VALUES
-                            ($1, $2, $3, $4)
+                            ($1, $2, $3, $4, $5)
                         RETURNING obj_id
                         "#,
                 domain,
                 internal_type,
                 &activitystream_type,
-                actor_id
+                actor_id,
+                published
             )
             .fetch_one(&mut *transaction)
             .await;
+            
+            let obj_id = val.unwrap().obj_id;
+            let id_link = format!("https://{}/users/{}/statuses/{}", domain, actor.preferred_username, obj_id);
 
-            let id = val.unwrap().obj_id;
+            let _result = query!(
+                "UPDATE objects SET id = $1 WHERE obj_id = $2",
+                &id_link,
+                obj_id
+            )
+            .execute(&mut *transaction)
+            .await;
 
-            let Some(published) = x.published else {
-                return Err(InsertErr::NoPublishDate);
-            };
-            let published = published.earliest().timestamp_millis();
-            let attributed_to = x.get_attributed_to().unwrap().as_str();
+            let _result = query!(
+                r#"INSERT INTO activity_objects
+                            (obj_id, type_field, id, name, attributedTo, content, published)
+                        VALUES
+                            ($1, $2, $3, $4, $5, $6, $7)
+                        "#,
+                obj_id,
+                activitystream_type,
+                &id_link,
+                x.name,
+                actor_fedi_id.as_str(),
+                x.content,
+                published
+            )
+            .execute(&mut *transaction)
+            .await;
 
-            // let val = query!(
-            //     r#"INSERT INTO activity_objects
-            //                 (obj_id, type_field, id, name, attributedTo, content, published)
-            //             VALUES
-            //                 ($1, $2, $3, $4, $5, $6, $7)
-            //             RETURNING obj_id
-            //             "#,
-            //     id,
-            //     activitystream_type,
-            //     actor_id,
-            //     x.name,
-            //     attributed_to,
-            //     x.content,
-            //     published
-            // )
-            // .fetch_one(&mut *transaction)
-            // .await;
-
-            id
+            obj_id
         }
         DbObject::Question(x) => todo!(),
     };
 
-    // let ap_id = insert_actor_into_ap_users(&mut *transaction, object, domain).await;
-
-    // let ap_id = match ap_id {
-    //     Ok(x) => x,
-    //     Err(x) => {
-    //         transaction.rollback().await.unwrap();
-    //         return Err(x);
-    //     }
-    // };
-
-    // let _key_id = match key_id {
-    //     Ok(x) => x,
-    //     Err(x) => {
-    //         transaction.rollback().await.unwrap();
-    //         return Err(InsertErr::DbErr(x));
-    //     }
-    // };
-
     transaction.commit().await.unwrap();
 
-    // Ok(ap_id)
+    Ok(val)
+}
+
+pub async fn get_object_by_db_id(
+    obj_id: i64,
+    mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
+    domain: &str,
+) -> Option<DbObject> {
+
     todo!()
 }
 

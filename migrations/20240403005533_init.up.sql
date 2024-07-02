@@ -55,7 +55,8 @@ CREATE TABLE objects (
 	internal_type			TEXT NOT NULL, -- can be Object, Question, or whatever is represented
 	activitystream_type		TEXT NOT NULL, 
 
-	ap_user_id	BIGINT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE -- used to represent the owner
+	ap_user_id	BIGINT NOT NULL REFERENCES activitypub_users(ap_user_id) ON DELETE CASCADE, -- used to represent the owner
+	published BIGINT NOT NULL --timestamp in milis
 	-- obj_id	BIGINT NULL REFERENCES activity_objects(obj_id) ON DELETE CASCADE
 );
 
