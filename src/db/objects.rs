@@ -1,5 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::query;
 use url::Url;
@@ -70,8 +71,18 @@ pub async fn create_new_object(
                 .ap_user_id
                 .expect("actor fetched from the db did not contain an actor id");
 
-            let published = match obj_wrap.object.published {
-                Some(x) => x.earliest().timestamp_millis(),
+            let published = match &obj_wrap.object.published {
+                Some(x) => {
+                    let time = DateTime::parse_from_rfc3339(&x);
+
+                    match time {
+                        Ok(x) => x.timestamp_millis(),
+                        Err(x) => SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as i64,
+                    }
+                }
                 None => SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
@@ -189,6 +200,7 @@ pub async fn get_object_by_db_id(
                 .name(object.name)
                 .content(object.content)
                 .in_reply_to(reply)
+                .published_milis(object.published)
                 .wrap(obj_type);
 
             Some(DbObject::Object(output))

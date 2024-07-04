@@ -21,7 +21,9 @@ use crate::{
     cache_and_fetch::Cache,
     db::{
         conn::DbConn,
+        internal_actor::get_actor_id_from_internal,
         objects::{create_new_object, get_object_by_db_id},
+        private_key::get_private_key,
     },
     protocol::verification::post_to_inbox,
 };
@@ -45,6 +47,8 @@ pub async fn create_post(
     let Ok(body) = String::from_utf8(body.to_vec()) else {
         return Ok(HttpResponse::BadRequest().body("invalid body"));
     };
+
+    dbg!(&user_id);
 
     let mut object = Object::new(Url::parse("https://temp.com").unwrap())
         .content(Some(body))
@@ -72,9 +76,11 @@ pub async fn create_post(
         .await
         .unwrap();
 
+    // let actor_id = get_actor_id_from_internal(&conn.db, &preferred_username).await.unwrap().unwrap();
+    // let key = get_private_key(&conn.db, actor_id).await;
     let key = sqlx::query!(
-        "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
-        "test"
+        "SELECT * FROM  internal_users WHERE preferred_username = $1",
+        &preferred_username
     )
     .fetch_one(&conn.db)
     .await
@@ -96,14 +102,14 @@ pub async fn create_post(
                 &key,
             )
             .await;
-            post_to_inbox(
-                &activity_str,
-                &user_id,
-                "cutie.city",
-                "https://cutie.city/inbox",
-                &key,
-            )
-            .await;
+            // post_to_inbox(
+            //     &activity_str,
+            //     &user_id,
+            //     "cutie.city",
+            //     "https://cutie.city/inbox",
+            //     &key,
+            // )
+            // .await;
 
             return Ok(HttpResponse::Created().body(format!("{}", activity_str)));
         }
@@ -122,5 +128,5 @@ pub async fn private_outbox(
     state: Data<crate::config::Config>,
 ) -> Result<HttpResponse, Error> {
     let preferred_username = path.into_inner();
-    todo!()
+    return Ok(HttpResponse::NotFound().body(format!("")))
 }

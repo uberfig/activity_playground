@@ -59,14 +59,17 @@ where
         return Err(InsertErr::NoDomain);
     };
 
+    let type_field = serde_json::to_string(&actor.type_field).unwrap();
+
     let val = query!(
         r#"INSERT INTO activitypub_users 
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked)
+            (id, type_field, preferred_username, domain, inbox, outbox, followers, following, liked)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8 )
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING ap_user_id
         "#,
         actor_id,
+        type_field,
         actor.preferred_username,
         domain,
         actor.inbox,
@@ -91,6 +94,7 @@ pub async fn get_ap_actor_by_db_id(id: i64, conn: &Data<DbConn>) -> Actor {
         .unwrap();
     // let test = actor.type_field;
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
+    dbg!(&type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 
     let object = Object::new(url::Url::parse(&actor.id).unwrap());
@@ -121,6 +125,8 @@ pub async fn get_ap_actor_by_fedi_id(
         .await
         .unwrap();
     // let test = actor.type_field;
+    dbg!(&actor.type_field);
+    println!("{}", &actor.type_field);
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 

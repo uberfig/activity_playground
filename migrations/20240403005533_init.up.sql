@@ -1,8 +1,8 @@
 CREATE TABLE activitypub_users (
 	ap_user_id			BIGSERIAL PRIMARY KEY NOT NULL UNIQUE,
 	id					TEXT NOT NULL UNIQUE,
-	local				BOOLEAN NOT NULL,
-	type_field			TEXT NOT NULL DEFAULT 'Person',
+	-- local				BOOLEAN NOT NULL,
+	type_field			TEXT NOT NULL,
 	preferred_username	TEXT NOT NULL,
 	domain				TEXT NOT NULL,
 	name				TEXT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE activity_objects (
 	content			TEXT,
 	in_reply_to		TEXT NULL REFERENCES objects(id),
 	
-	published		BIGINT
+	published		BIGINT NOT NULL
 );
 
 CREATE TABLE attachments (

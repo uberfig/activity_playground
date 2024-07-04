@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDateTime, SecondsFormat};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -141,7 +142,7 @@ pub struct Object {
     pub preview: Option<RangeLinkExtendsObject>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub published: Option<xsd_types::DateTime>,
+    pub published: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub replies: Option<Box<ExtendsCollection>>,
@@ -223,18 +224,28 @@ impl Object {
         self.id.id = id;
         self
     }
-    pub fn published(mut self, published: Option<xsd_types::DateTime>) -> Self {
-        self.published = published;
-        self
-    }
     pub fn in_reply_to(mut self, in_reply_to: Option<RangeLinkExtendsObject>) -> Self {
         self.in_reply_to = in_reply_to;
+        self
+    }
+    pub fn published_milis(mut self, published: i64) -> Self {
+        let test = DateTime::from_timestamp_millis(published).unwrap();
+        let time = test.to_rfc3339_opts(SecondsFormat::Secs, true);
+        self.published = Some(time);
+        self
+    }
+    pub fn to_public(mut self) -> Self {
+        self.to = Some(RangeLinkObjOrArray::Single(RangeLinkExtendsObject::Link(
+            Box::new(super::link::LinkSimpleOrExpanded::Simple(
+                Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),
+            )),
+        )));
         self
     }
     pub fn wrap(self, obj_type: ObjectType) -> ObjectWrapper {
         ObjectWrapper {
             type_field: obj_type,
-            object: self,
+            object: self.to_public(),
         }
     }
     pub fn to_activitystream(self, obj_type: ObjectType) -> ActivityStream {

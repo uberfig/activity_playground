@@ -6,7 +6,10 @@ use argon2::{
 use openssl::rsa::Rsa;
 use sqlx::query;
 
-use crate::db::{internal_actor::get_actor_id_from_internal, public_key::insert_public_key};
+use crate::{
+    activitystream_objects::actors::ActorType,
+    db::{internal_actor::get_actor_id_from_internal, public_key::insert_public_key},
+};
 
 use super::conn::DbConn;
 
@@ -100,14 +103,16 @@ pub async fn insert_into_ap_users<'e, 'c: 'e, E>(
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
+    let type_field = serde_json::to_string(&ActorType::Person).unwrap();
     let val = query!(
         r#"INSERT INTO activitypub_users
-            (id, preferred_username, domain, inbox, outbox, followers, following, liked)
+            (id, type_field, preferred_username, domain, inbox, outbox, followers, following, liked)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING ap_user_id
         "#,
         links.id,
+        type_field,
         username,
         domain,
         links.inbox,

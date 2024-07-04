@@ -27,7 +27,10 @@ where
 
     match val {
         Ok(x) => Ok(x.pub_key_id),
-        Err(x) => Err(x),
+        Err(x) => {
+            dbg!(&x);
+            Err(x)
+        }
     }
 }
 

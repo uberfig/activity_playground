@@ -85,33 +85,33 @@ pub async fn create_test(
     Ok(HttpResponse::Ok().body(format!("{x}")))
 }
 
-#[get("/post_test")]
-pub async fn post_test(
-    // state: Data<crate::config::Config>,
-    conn: Data<DbConn>,
-) -> Result<HttpResponse> {
-    let activity: ActivityStream = serde_json::from_str(activities::ACTIVITY).unwrap();
+// #[get("/post_test")]
+// pub async fn post_test(
+//     // state: Data<crate::config::Config>,
+//     conn: Data<DbConn>,
+// ) -> Result<HttpResponse> {
+//     let activity: ActivityStream = serde_json::from_str(activities::ACTIVITY).unwrap();
 
-    let val = sqlx::query!(
-        "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
-        "test"
-    )
-    .fetch_one(&conn.db)
-    .await
-    .unwrap();
+//     let val = sqlx::query!(
+//         "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
+//         "test"
+//     )
+//     .fetch_one(&conn.db)
+//     .await
+//     .unwrap();
 
-    let key = openssl::rsa::Rsa::private_key_from_pem(val.private_key.as_bytes()).unwrap();
-    let key = PKey::from_rsa(key).unwrap();
+//     let key = openssl::rsa::Rsa::private_key_from_pem(val.private_key.as_bytes()).unwrap();
+//     let key = PKey::from_rsa(key).unwrap();
 
-    let activity_str = serde_json::to_string(&activity).unwrap();
-    post_to_inbox(
-        &activity_str,
-        "https://place.ivytime.gay/users/test",
-        "mastodon.social",
-        "https://mastodon.social/inbox",
-        &key,
-    )
-    .await;
+//     let activity_str = serde_json::to_string(&activity).unwrap();
+//     post_to_inbox(
+//         &activity_str,
+//         "https://place.ivytime.gay/users/test",
+//         "mastodon.social",
+//         "https://mastodon.social/inbox",
+//         &key,
+//     )
+//     .await;
 
-    Ok(HttpResponse::Ok().body(""))
-}
+//     Ok(HttpResponse::Ok().body(""))
+// }

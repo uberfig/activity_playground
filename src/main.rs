@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{env, sync::Mutex};
 
 use activity_playground::{
     activitystream_objects::{
@@ -7,9 +7,10 @@ use activity_playground::{
         object::Object,
     },
     api::{
-        activities::{get_activity, get_object},
-        actor::{create_test, get_actor, get_instance_actor, post_test},
+        // activities::{get_activity, get_object},
+        actor::{create_test, get_actor, get_instance_actor},
         inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
+        objects::get_object,
         outbox::{self, create_post, private_outbox},
         webfinger::webfinger,
     },
@@ -53,6 +54,7 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env::set_var("RUST_BACKTRACE", "1");
     //     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
     //         .name(Some("hello".to_string()))
     //         .to_activitystream();
@@ -116,7 +118,7 @@ async fn main() -> std::io::Result<()> {
 
     let test = serde_json::to_string_pretty(&deserialized).unwrap();
 
-    println!("{test}");
+    // println!("{test}");
     //----------------config file settings----------------
 
     let settings = config::Config::builder()
@@ -216,10 +218,10 @@ async fn main() -> std::io::Result<()> {
             .service(webfinger)
             .service(get_actor)
             .service(get_profile_page)
-            .service(get_activity)
-            .service(get_object)
+            // .service(get_activity)
+            // .service(get_object)
             .service(create_test)
-            .service(post_test)
+            // .service(post_test)
             .service(shared_inbox)
             .service(private_inbox)
             .service(inspect_inbox)
