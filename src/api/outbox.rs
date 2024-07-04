@@ -91,7 +91,7 @@ pub async fn create_post(
 
     match object {
         crate::db::objects::DbObject::Object(x) => {
-            let activity = x.to_activitystream();
+            let activity = x.to_create_activitystream();
             let activity_str = serde_json::to_string(&activity).unwrap();
 
             post_to_inbox(
@@ -128,5 +128,5 @@ pub async fn private_outbox(
     state: Data<crate::config::Config>,
 ) -> Result<HttpResponse, Error> {
     let preferred_username = path.into_inner();
-    return Ok(HttpResponse::NotFound().body(format!("")))
+    return Ok(HttpResponse::NotFound().body(format!("")));
 }

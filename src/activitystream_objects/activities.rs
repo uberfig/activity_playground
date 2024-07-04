@@ -8,8 +8,8 @@ use crate::{activitystream_objects::object, cache_and_fetch::Cache, db::conn::Db
 
 use super::{
     actors::RangeLinkActor,
-    core_types::{RangeLinkExtendsObject, RangeLinkObject},
-    object::Object,
+    core_types::{ExtendsObject, RangeLinkExtendsObject, RangeLinkObject},
+    object::{Object, ObjectWrapper},
 };
 
 // #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -174,6 +174,21 @@ pub struct Activity {
 }
 
 impl Activity {
+    pub fn new_create(object: ObjectWrapper) -> Self {
+        let intransitive = IntransitiveActivity {
+            extends_object: Object::new(Url::parse(&format!("{}/create", object.object.id.id.as_str())).unwrap()),
+            actor: RangeLinkActor::Link(object.object.get_attributed_to().unwrap().clone()),
+            target: None,
+            result: None,
+            origin: None,
+            instrument: None,
+        };
+        Activity {
+            type_field: ActivityType::Create,
+            object: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(object))),
+            extends_intransitive: intransitive,
+        }
+    }
     pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
         match self.type_field {
             ActivityType::Create => {

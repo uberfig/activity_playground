@@ -63,6 +63,7 @@ pub struct Actor {
     #[serde(rename = "type")]
     pub type_field: ActorType,
     pub preferred_username: String,
+    #[serde(flatten)]
     pub extends_object: Object,
     pub public_key: PublicKey,
 

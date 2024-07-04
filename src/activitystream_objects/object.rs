@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use super::{
+    activities::{Activity, ExtendsIntransitive},
     actors::RangeLinkActor,
     collections::ExtendsCollection,
     core_types::{
@@ -97,6 +98,18 @@ impl ObjectWrapper {
                 activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
                     self,
                 ))),
+            },
+        }
+    }
+    pub fn to_create_activitystream(self) -> ActivityStream {
+        ActivityStream {
+            content: ContextWrap {
+                context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
+                activity_stream: RangeLinkExtendsObject::Object(
+                    ExtendsObject::ExtendsIntransitive(Box::new(
+                        ExtendsIntransitive::ExtendsActivity(Activity::new_create(self)),
+                    )),
+                ),
             },
         }
     }
