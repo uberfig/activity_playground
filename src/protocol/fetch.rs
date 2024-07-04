@@ -11,7 +11,7 @@ use crate::activitystream_objects::core_types::ActivityStream;
 
 #[derive(Debug)]
 pub enum FetchErr {
-    IsTombstone,
+    IsTombstone(String),
     RequestErr(reqwest::Error),
     DeserializationErr(serde_json::Error),
 }
@@ -19,7 +19,7 @@ pub enum FetchErr {
 impl Display for FetchErr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FetchErr::IsTombstone => write!(f, "IsTombstone"),
+            FetchErr::IsTombstone(x) => write!(f, "IsTombstone: {}", x),
             FetchErr::RequestErr(x) => write!(f, "RequestErr: {}", x),
             FetchErr::DeserializationErr(x) => write!(f, "DeserializationErr: {}", x),
         }
@@ -75,7 +75,7 @@ pub async fn authorized_fetch(
     };
 
     if response.eq(r#"{"error":"Gone"}"#) {
-        return Err(FetchErr::IsTombstone);
+        return Err(FetchErr::IsTombstone(object_id.to_string()));
     }
     println!("auth fetch got:\n{}", &response);
 
