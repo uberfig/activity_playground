@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use actix_web::web::Data;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -23,38 +25,62 @@ pub struct ActivityStream {
 
 impl ActivityStream {
     pub fn get_actor(self) -> Option<Box<Actor>> {
+        // match self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(ExtendsObject::Actor(x)) => Some(x),
+        //     _ => None,
+        // }
         match self.content.activity_stream {
-            RangeLinkExtendsObject::Object(ExtendsObject::Actor(x)) => Some(x),
+            ExtendsObject::Actor(x) => Some(x),
             _ => None,
         }
     }
     pub fn get_activity(self) -> Option<Box<ExtendsIntransitive>> {
+        // match self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => Some(x),
+        //     _ => None,
+        // }
         match self.content.activity_stream {
-            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => Some(x),
+            ExtendsObject::ExtendsIntransitive(x) => Some(x),
             _ => None,
         }
     }
     pub fn get_object(self) -> Option<Box<ObjectWrapper>> {
+        // match self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(ExtendsObject::Object(x)) => Some(x),
+        //     _ => None,
+        // }
         match self.content.activity_stream {
-            RangeLinkExtendsObject::Object(ExtendsObject::Object(x)) => Some(x),
+            ExtendsObject::Object(x) => Some(x),
             _ => None,
         }
     }
-    pub fn get_extends_object(self) -> Option<ExtendsObject> {
-        match self.content.activity_stream {
-            RangeLinkExtendsObject::Object(x) => Some(x),
-            _ => None,
-        }
+    pub fn get_extends_object(self) -> ExtendsObject {
+        // match self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(x) => Some(x),
+        //     _ => None,
+        // }
+        return self.content.activity_stream;
     }
     pub fn is_activity(&self) -> bool {
+        // matches!(
+        //     &self.content.activity_stream,
+        //     RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(_))
+        // )
         matches!(
             &self.content.activity_stream,
-            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(_))
+            ExtendsObject::ExtendsIntransitive(_)
         )
     }
     pub async fn verify_attribution(&self, cache: &Cache, conn: &Data<DbConn>) -> Result<(), ()> {
+        // match &self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => match &**x {
+        //         ExtendsIntransitive::ExtendsActivity(x) => x.verify_attribution(cache, conn).await,
+        //         _ => Ok(()),
+        //     },
+        //     _ => Ok(()),
+        // }
         match &self.content.activity_stream {
-            RangeLinkExtendsObject::Object(ExtendsObject::ExtendsIntransitive(x)) => match &**x {
+            ExtendsObject::ExtendsIntransitive(x) => match &**x {
                 ExtendsIntransitive::ExtendsActivity(x) => x.verify_attribution(cache, conn).await,
                 _ => Ok(()),
             },
@@ -62,17 +88,26 @@ impl ActivityStream {
         }
     }
     pub fn get_owner(&self) -> Option<&Url> {
+        // match &self.content.activity_stream {
+        //     RangeLinkExtendsObject::Object(x) => match x {
+        //         ExtendsObject::Object(x) => match &x.object.attributed_to {
+        //             Some(x) => Some(x.get_id()),
+        //             None => None,
+        //         },
+        //         ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
+        //         ExtendsObject::ExtendsCollection(_) => None,
+        //         ExtendsObject::Actor(x) => Some(x.get_id()),
+        //     },
+        //     RangeLinkExtendsObject::Link(x) => todo!(),
+        // }
         match &self.content.activity_stream {
-            RangeLinkExtendsObject::Object(x) => match x {
-                ExtendsObject::Object(x) => match &x.object.attributed_to {
-                    Some(x) => Some(x.get_id()),
-                    None => None,
-                },
-                ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
-                ExtendsObject::ExtendsCollection(_) => None,
-                ExtendsObject::Actor(x) => Some(x.get_id()),
+            ExtendsObject::Object(x) => match &x.object.attributed_to {
+                Some(x) => Some(x.get_id()),
+                None => None,
             },
-            RangeLinkExtendsObject::Link(x) => todo!(),
+            ExtendsObject::ExtendsIntransitive(x) => Some(x.get_actor()),
+            ExtendsObject::ExtendsCollection(_) => None,
+            ExtendsObject::Actor(x) => Some(x.get_id()),
         }
     }
 }
@@ -84,14 +119,28 @@ pub struct ContextWrap {
     #[serde(rename = "@context")]
     pub context: Context,
     #[serde(flatten)]
-    pub activity_stream: RangeLinkExtendsObject,
+    pub activity_stream: ExtendsObject,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Context {
-    Array(Vec<String>),
+    Array(Vec<ContextItem>),
     Single(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ContextItem {
+    String(String),
+    Map(HashMap<String, ContextMapItem>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ContextMapItem {
+    String(String),
+    Map(HashMap<String, String>),
 }
 
 //--------------------inheritence---------------------
@@ -165,12 +214,13 @@ impl RangeLinkExtendsObject {
 
                 match val {
                     Ok(x) => {
-                        let object = x.get_extends_object();
+                        // let object = x.get_extends_object();
 
-                        match object {
-                            Some(x) => Ok(x),
-                            None => Err(ConcreteErr::NotAnObject),
-                        }
+                        // match object {
+                        //     Some(x) => Ok(x),
+                        //     None => Err(ConcreteErr::NotAnObject),
+                        // }
+                        Ok(x.get_extends_object())
                     }
                     Err(x) => Err(ConcreteErr::FetchErr(x)),
                 }

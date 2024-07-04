@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -82,15 +84,23 @@ pub struct Actor {
 
 impl Actor {
     pub fn to_activitystream(self) -> ActivityStream {
+        // let mut test: HashMap<String, ContextMapItem> = HashMap::new();
+        // let mut item: HashMap<String, String> = HashMap::new();
+        // item.insert("@id".to_string(), "toot:featuredTags".to_string());
+        // item.insert("@type".to_string(), "@id".to_string());
+        // test.insert("featuredTags".to_string(), ContextMapItem::Map(item));
+        // test.insert("manuallyApprovesFollowers".to_string(), ContextMapItem::String("as:manuallyApprovesFollowers".to_string()));
         ActivityStream {
             content: ContextWrap {
                 context: Context::Array(vec![
-                    "https://www.w3.org/ns/activitystreams".to_owned(),
-                    "https://w3id.org/security/v1".to_owned(),
+                    ContextItem::String("https://www.w3.org/ns/activitystreams".to_owned()),
+                    ContextItem::String("https://w3id.org/security/v1".to_owned()),
+                    // ContextItem::Map(test)
                 ]),
-                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(Box::new(
-                    self,
-                ))),
+                // activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(Box::new(
+                //     self,
+                // ))),
+                activity_stream: ExtendsObject::Actor(Box::new(self)),
             },
         }
     }
@@ -110,10 +120,11 @@ impl From<Box<Actor>> for ActivityStream {
         ActivityStream {
             content: ContextWrap {
                 context: Context::Array(vec![
-                    "https://www.w3.org/ns/activitystreams".to_owned(),
-                    "https://w3id.org/security/v1".to_owned(),
+                    ContextItem::String("https://www.w3.org/ns/activitystreams".to_owned()),
+                    ContextItem::String("https://w3id.org/security/v1".to_owned()),
                 ]),
-                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(value)),
+                // activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Actor(value)),
+                activity_stream: ExtendsObject::Actor(value),
             },
         }
     }

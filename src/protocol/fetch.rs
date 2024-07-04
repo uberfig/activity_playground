@@ -9,6 +9,7 @@ use url::Url;
 
 use crate::activitystream_objects::core_types::ActivityStream;
 
+#[derive(Debug)]
 pub enum FetchErr {
     RequestErr(reqwest::Error),
     DeserializationErr(serde_json::Error),
@@ -56,11 +57,13 @@ pub async fn authorized_fetch(
     };
 
     let response = res.text().await;
-    dbg!(&response);
+    // dbg!(&response);
     let response = match response {
         Ok(x) => x,
         Err(x) => return Err(FetchErr::RequestErr(x)),
     };
+
+    println!("auth fetch got:\n{}", &response);
 
     let object: Result<ActivityStream, serde_json::Error> = serde_json::from_str(&response);
     let object = match object {

@@ -95,9 +95,10 @@ impl ObjectWrapper {
         ActivityStream {
             content: ContextWrap {
                 context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
-                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
-                    self,
-                ))),
+                // activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
+                //     self,
+                // ))),
+                activity_stream: ExtendsObject::Object(Box::new(self)),
             },
         }
     }
@@ -105,11 +106,14 @@ impl ObjectWrapper {
         ActivityStream {
             content: ContextWrap {
                 context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
-                activity_stream: RangeLinkExtendsObject::Object(
-                    ExtendsObject::ExtendsIntransitive(Box::new(
-                        ExtendsIntransitive::ExtendsActivity(Activity::new_create(self)),
-                    )),
-                ),
+                // activity_stream: RangeLinkExtendsObject::Object(
+                //     ExtendsObject::ExtendsIntransitive(Box::new(
+                //         ExtendsIntransitive::ExtendsActivity(Activity::new_create(self)),
+                //     )),
+                // ),
+                activity_stream: ExtendsObject::ExtendsIntransitive(Box::new(
+                    ExtendsIntransitive::ExtendsActivity(Activity::new_create(self)),
+                )),
             },
         }
     }
@@ -265,12 +269,16 @@ impl Object {
         ActivityStream {
             content: ContextWrap {
                 context: Context::Single("https://www.w3.org/ns/activitystreams".to_string()),
-                activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
-                    ObjectWrapper {
-                        type_field: obj_type,
-                        object: self,
-                    },
-                ))),
+                // activity_stream: RangeLinkExtendsObject::Object(ExtendsObject::Object(Box::new(
+                //     ObjectWrapper {
+                //         type_field: obj_type,
+                //         object: self,
+                //     },
+                // ))),
+                activity_stream: ExtendsObject::Object(Box::new(ObjectWrapper {
+                    type_field: obj_type,
+                    object: self,
+                })),
             },
         }
     }

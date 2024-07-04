@@ -17,7 +17,7 @@ use activity_playground::{
     cache_and_fetch::Cache,
     config::Config,
     db::{conn::DbConn, instance_actor::init_instance_actpr},
-    protocol::instance_actor::InstanceActor,
+    protocol::{fetch::authorized_fetch, instance_actor::InstanceActor},
 };
 use actix_web::{
     // error::ErrorBadRequest,
@@ -207,6 +207,18 @@ async fn main() -> std::io::Result<()> {
     });
 
     let cache = Data::new(Cache::new(instance_actor, config.clone()));
+
+    //
+
+    let test = authorized_fetch(
+        &Url::parse("https://mastodon.social/users/ivy_test").unwrap(),
+        &cache.instance_actor.item.key_id,
+        &cache.instance_actor.item.private_key,
+    )
+    .await;
+    dbg!(&test);
+    // test.unwrap();
+    //
 
     HttpServer::new(move || {
         App::new()

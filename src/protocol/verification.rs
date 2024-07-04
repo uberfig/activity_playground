@@ -10,11 +10,13 @@ use openssl::{
     rsa::Rsa,
 };
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::{
     activitystream_objects::{actors::Actor, core_types::ActivityStream},
     cache_and_fetch::Cache,
     db::conn::DbConn,
+    protocol::fetch::authorized_fetch,
 };
 
 pub fn generate_digest(body: &[u8]) -> String {
@@ -47,6 +49,7 @@ pub enum RequestVerificationError {
     BodyDeserializeErr,
     ForgedAttribution,
     KeyOwnerDoesNotMatch,
+    KeyLinkNotActor,
 }
 
 pub async fn post_to_inbox(
@@ -182,24 +185,38 @@ pub async fn verify_incoming(
 
     dbg!(&signature);
 
-    let client = reqwest::Client::new();
-    let client = client
-        .get(key_id)
-        .header("accept", "application/activity+json");
+    let fetched = authorized_fetch(
+        &Url::parse(&key_id).unwrap(),
+        &cache.instance_actor.item.key_id,
+        &cache.instance_actor.item.private_key,
+    )
+    .await;
 
-    let Ok(res) = client.send().await else {
-        return Err(RequestVerificationError::ActorFetchFailed);
+    dbg!(&fetched);
+
+    let Some(actor) = fetched.unwrap().get_actor() else {
+        return Err(RequestVerificationError::KeyLinkNotActor);
     };
 
-    let Ok(actor) = res.bytes().await else {
-        return Err(RequestVerificationError::ActorFetchBodyFailed);
-    };
+    // let client = reqwest::Client::new();
+    // let client = client
+    //     .get(key_id)
+    //     .header("accept", "application/activity+json");
 
-    let actor: Result<Actor, _> = serde_json::from_slice(&actor);
-    let Ok(actor) = actor else {
-        dbg!(&actor);
-        return Err(RequestVerificationError::ActorDeserializeFailed);
-    };
+    // let Ok(res) = client.send().await else {
+    //     return Err(RequestVerificationError::ActorFetchFailed);
+    // };
+
+    // let Ok(actor) = res.bytes().await else {
+    //     return Err(RequestVerificationError::ActorFetchBodyFailed);
+    // };
+
+    // println!("actor:\n{}", String::from_utf8((&actor).to_vec()).unwrap());
+    // let actor: Result<Actor, _> = serde_json::from_slice(&actor);
+    // let Ok(actor) = actor else {
+    //     dbg!(&actor);
+    //     return Err(RequestVerificationError::ActorDeserializeFailed);
+    // };
 
     if let Some(x) = object.get_owner() {
         if actor.get_id().ne(x) {

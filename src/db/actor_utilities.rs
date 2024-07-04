@@ -94,7 +94,6 @@ pub async fn get_ap_actor_by_db_id(id: i64, conn: &Data<DbConn>) -> Actor {
         .unwrap();
     // let test = actor.type_field;
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
-    dbg!(&type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 
     let object = Object::new(url::Url::parse(&actor.id).unwrap());
@@ -125,8 +124,8 @@ pub async fn get_ap_actor_by_fedi_id(
         .await
         .unwrap();
     // let test = actor.type_field;
-    dbg!(&actor.type_field);
-    println!("{}", &actor.type_field);
+    // dbg!(&actor.type_field);
+    // println!("{}", &actor.type_field);
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 

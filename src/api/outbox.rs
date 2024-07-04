@@ -102,14 +102,14 @@ pub async fn create_post(
                 &key,
             )
             .await;
-            // post_to_inbox(
-            //     &activity_str,
-            //     &user_id,
-            //     "cutie.city",
-            //     "https://cutie.city/inbox",
-            //     &key,
-            // )
-            // .await;
+            post_to_inbox(
+                &activity_str,
+                &user_id,
+                "cutie.city",
+                "https://cutie.city/inbox",
+                &key,
+            )
+            .await;
 
             return Ok(HttpResponse::Created().body(format!("{}", activity_str)));
         }
