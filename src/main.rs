@@ -55,6 +55,8 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
+
+
     //     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
     //         .name(Some("hello".to_string()))
     //         .to_activitystream();

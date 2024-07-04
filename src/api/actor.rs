@@ -33,9 +33,13 @@ pub async fn get_instance_actor(
     println!("getting the instance actor");
     dbg!(request);
     dbg!(body);
+
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")
-        .body(serde_json::to_string(&cache.instance_actor.string_rep.as_ref().unwrap()).unwrap()))
+        .body(serde_json::to_string(&cache.instance_actor.item.actor).unwrap()))
+    // Ok(HttpResponse::Ok()
+    //     .content_type("application/activity+json; charset=utf-8")
+    //     .body(serde_json::to_string(&cache.instance_actor.string_rep.as_ref().unwrap()).unwrap()))
 }
 
 #[get("/users/{preferred_username}")]

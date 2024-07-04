@@ -19,6 +19,8 @@ use crate::{
     protocol::fetch::authorized_fetch,
 };
 
+use super::fetch::FetchErr;
+
 pub fn generate_digest(body: &[u8]) -> String {
     let mut hasher = openssl::hash::Hasher::new(MessageDigest::sha256()).unwrap();
     hasher.update(body).unwrap();
@@ -39,7 +41,7 @@ pub enum RequestVerificationError {
     NoSignatureKey,
     NoSignature,
     SignatureIncorrectBase64,
-    ActorFetchFailed,
+    ActorFetchFailed(String),
     ActorFetchBodyFailed,
     ActorDeserializeFailed,
     NoSignatureHeaders,
@@ -194,7 +196,12 @@ pub async fn verify_incoming(
 
     dbg!(&fetched);
 
-    let Some(actor) = fetched.unwrap().get_actor() else {
+    let fetched = match fetched {
+        Ok(x) => x,
+        Err(x) => return Err(RequestVerificationError::ActorFetchFailed(x.to_string())),
+    };
+
+    let Some(actor) = fetched.get_actor() else {
         return Err(RequestVerificationError::KeyLinkNotActor);
     };
 
