@@ -35,9 +35,15 @@ pub struct CachedItem<T: Clone> {
     pub stale: AtomicBool,
 }
 
+#[derive(Debug, Clone)]
+pub struct CacheWithText<T: Clone> {
+    pub item: T,
+    pub string_rep: Option<String>,
+}
+
 pub struct Cache {
     pub state: crate::config::Config,
-    pub instance_actor: InstanceActor,
+    pub instance_actor: CacheWithText<InstanceActor>,
     pub domains: RwLock<HashMap<String, DomainRequest>>,
     // pub outgoing_cache: RwLock<HashMap<String, String>>, //cache of objects being externally requested
     pub fetch: RwLock<HashMap<String, CachedItem<ActivityStream>>>, //cache of objects being fetched
@@ -45,9 +51,13 @@ pub struct Cache {
 
 impl Cache {
     pub fn new(instance_actor: InstanceActor, state: crate::config::Config) -> Cache {
+        let string_rep = serde_json::to_string(&instance_actor.actor).unwrap();
         Cache {
             state,
-            instance_actor,
+            instance_actor: CacheWithText {
+                item: instance_actor,
+                string_rep: Some(string_rep),
+            },
             domains: RwLock::new(HashMap::new()),
             // outgoing_cache: RwLock::new(HashMap::new()),
             fetch: RwLock::new(HashMap::new()),
@@ -55,7 +65,7 @@ impl Cache {
     }
 }
 
-pub async fn get_local_object(id: &Url) -> ActivityStream {
+async fn get_local_object(id: &Url, cache: &Cache, conn: &Data<DbConn>) -> ActivityStream {
     todo!()
 }
 
@@ -65,7 +75,7 @@ pub enum FetchErr {
     DoesNotExist,
 }
 
-pub async fn get_federated_object(
+async fn get_federated_object(
     id: &Url,
     cache: &Cache,
     conn: &Data<DbConn>,
@@ -113,8 +123,8 @@ pub async fn get_federated_object(
 
     let object = authorized_fetch(
         id,
-        &cache.instance_actor.key_id,
-        &cache.instance_actor.private_key,
+        &cache.instance_actor.item.key_id,
+        &cache.instance_actor.item.private_key,
     )
     .await;
     let object = match object {
@@ -147,7 +157,7 @@ pub async fn fetch_object(
 ) -> Result<ActivityStream, FetchErr> {
     if let Some(x) = id.domain() {
         if x.eq_ignore_ascii_case(&cache.state.instance_domain) {
-            return Ok(get_local_object(id).await);
+            return Ok(get_local_object(id, cache, conn).await);
         }
         return get_federated_object(id, cache, conn).await;
     }

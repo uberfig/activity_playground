@@ -1,4 +1,4 @@
-use openssl::{pkey::Private, rsa::Rsa};
+use openssl::{derive, pkey::Private, rsa::Rsa};
 use url::Url;
 
 use crate::{
@@ -9,6 +9,7 @@ use crate::{
     db::account_creation::UserLinks,
 };
 
+#[derive(Debug, Clone)]
 pub struct InstanceActor {
     pub actor: Actor,
     pub key_id: String,

@@ -21,11 +21,7 @@ pub async fn get_object(
 
     let (_preferred_username, object_id) = path.into_inner();
 
-    let object = get_object_by_db_id(
-        object_id,
-        conn.db.begin().await.unwrap(),
-    )
-    .await;
+    let object = get_object_by_db_id(object_id, conn.db.begin().await.unwrap()).await;
 
     let object = match object {
         Some(x) => x,

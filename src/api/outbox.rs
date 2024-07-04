@@ -6,32 +6,116 @@
 // pub fn create_activity(conn: &Data<DbConn>, user_id: i64) {}
 
 use actix_web::{
+    get,
     http::Error,
     post,
     web::{self, Data},
     HttpRequest, HttpResponse,
 };
+use openssl::pkey::PKey;
+use url::Url;
 
-use crate::{api::inbox::Inbox, cache_and_fetch::Cache, db::conn::DbConn};
+use crate::{
+    activitystream_objects::object::{Object, ObjectType},
+    api::inbox::Inbox,
+    cache_and_fetch::Cache,
+    db::{
+        conn::DbConn,
+        objects::{create_new_object, get_object_by_db_id},
+    },
+    protocol::verification::post_to_inbox,
+};
 
-#[post("/outbox")]
-pub async fn shared_outbox(
+#[post("/users/{preferred_username}/outbox")]
+pub async fn create_post(
     request: HttpRequest,
+    path: web::Path<String>,
     // conn: Data<DbConn>,
-    inbox: Data<Inbox>,
     body: web::Bytes,
     cache: Data<Cache>,
     conn: Data<DbConn>,
+    state: Data<crate::config::Config>,
 ) -> Result<HttpResponse, Error> {
-    todo!()
+    let preferred_username = path.into_inner();
+    let user_id = format!(
+        "https://{}/users/{}",
+        &state.instance_domain, &preferred_username
+    );
+
+    let Ok(body) = String::from_utf8(body.to_vec()) else {
+        return Ok(HttpResponse::BadRequest().body("invalid body"));
+    };
+
+    let mut object = Object::new(Url::parse("https://temp.com").unwrap())
+        .content(Some(body))
+        .attributed_to_link(Some(Url::parse(&user_id).unwrap()))
+        .wrap(ObjectType::Note);
+
+    let obj_id = create_new_object(
+        &crate::db::objects::DbObject::Object(object),
+        conn.db.begin().await.unwrap(),
+        &state.instance_domain,
+    )
+    .await;
+
+    let obj_id = match obj_id {
+        Ok(x) => x,
+        Err(x) => return Ok(HttpResponse::BadRequest().body(format!("{}", x))),
+    };
+
+    let id_link = format!(
+        "https://{}/users/{}/statuses/{}",
+        &state.instance_domain, preferred_username, obj_id
+    );
+
+    let object = get_object_by_db_id(obj_id, conn.db.begin().await.unwrap())
+        .await
+        .unwrap();
+
+    let key = sqlx::query!(
+        "SELECT private_key FROM  internal_users WHERE preferred_username = $1",
+        "test"
+    )
+    .fetch_one(&conn.db)
+    .await
+    .unwrap();
+
+    let key = openssl::rsa::Rsa::private_key_from_pem(key.private_key.as_bytes()).unwrap();
+    let key = PKey::from_rsa(key).unwrap();
+
+    match object {
+        crate::db::objects::DbObject::Object(x) => {
+            let activity = x.to_activitystream();
+            let activity_str = serde_json::to_string(&activity).unwrap();
+
+            post_to_inbox(
+                &activity_str,
+                &user_id,
+                "mastodon.social",
+                "https://mastodon.social/inbox",
+                &key,
+            )
+            .await;
+            post_to_inbox(
+                &activity_str,
+                &user_id,
+                "cutie.city",
+                "https://cutie.city/inbox",
+                &key,
+            )
+            .await;
+
+            return Ok(HttpResponse::Created().body(format!("{}", activity_str)));
+        }
+        crate::db::objects::DbObject::Question(_) => todo!(),
+    }
 }
 
-#[post("/users/{preferred_username}/inbox")]
+#[get("/users/{preferred_username}/outbox")]
 pub async fn private_outbox(
     request: HttpRequest,
     path: web::Path<String>,
     // conn: Data<DbConn>,
-    inbox: Data<Inbox>,
     body: web::Bytes,
     cache: Data<Cache>,
     conn: Data<DbConn>,

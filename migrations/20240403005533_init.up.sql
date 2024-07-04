@@ -73,6 +73,7 @@ CREATE TABLE activity_objects (
 	-- attachment
 	attributedTo	TEXT NOT NULL REFERENCES activitypub_users(id) ON DELETE CASCADE,
 	content			TEXT,
+	in_reply_to		TEXT NULL REFERENCES objects(id),
 	
 	published		BIGINT
 );

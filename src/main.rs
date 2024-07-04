@@ -8,14 +8,14 @@ use activity_playground::{
     },
     api::{
         activities::{get_activity, get_object},
-        actor::{create_test, get_actor, post_test},
+        actor::{create_test, get_actor, get_instance_actor, post_test},
         inbox::{inspect_inbox, private_inbox, shared_inbox, Inbox},
-        outbox::{self, private_outbox, shared_outbox},
+        outbox::{self, create_post, private_outbox},
         webfinger::webfinger,
     },
     cache_and_fetch::Cache,
     config::Config,
-    db::conn::DbConn,
+    db::{conn::DbConn, instance_actor::init_instance_actpr},
     protocol::instance_actor::InstanceActor,
 };
 use actix_web::{
@@ -156,41 +156,47 @@ async fn main() -> std::io::Result<()> {
 
     //-------------init instance actor----------------
 
-    let instance_actor = query!(r#"SELECT * FROM instance_actor LIMIT 1"#,)
-        .fetch_optional(&pool)
-        .await;
+    let instance_actor = init_instance_actpr(
+        &mut pool.begin().await.expect("failed to establish transaction"),
+        &config.instance_domain,
+    )
+    .await;
 
-    let instance_actor = match instance_actor.unwrap() {
-        Some(x) => InstanceActor::new(
-            openssl::rsa::Rsa::private_key_from_pem(x.private_key.as_bytes()).unwrap(),
-            x.public_key_pem,
-            &config.instance_domain,
-        ),
-        None => {
-            let rsa = openssl::rsa::Rsa::generate(2048).unwrap();
-            let private_key = String::from_utf8(rsa.private_key_to_pem().unwrap()).unwrap();
-            let public = String::from_utf8(rsa.public_key_to_pem().unwrap()).unwrap();
+    // let instance_actor = query!(r#"SELECT * FROM instance_actor LIMIT 1"#,)
+    //     .fetch_optional(&pool)
+    //     .await;
 
-            let val = query!(
-                r#"INSERT INTO instance_actor 
-                    (private_key, public_key_pem)
-                VALUES
-                    ($1, $2)
-                "#,
-                &private_key,
-                &public,
-            )
-            .execute(&pool)
-            .await;
+    // let instance_actor = match instance_actor.unwrap() {
+    //     Some(x) => InstanceActor::new(
+    //         openssl::rsa::Rsa::private_key_from_pem(x.private_key.as_bytes()).unwrap(),
+    //         x.public_key_pem,
+    //         &config.instance_domain,
+    //     ),
+    //     None => {
+    //         let rsa = openssl::rsa::Rsa::generate(2048).unwrap();
+    //         let private_key = String::from_utf8(rsa.private_key_to_pem().unwrap()).unwrap();
+    //         let public = String::from_utf8(rsa.public_key_to_pem().unwrap()).unwrap();
 
-            val.unwrap();
-            InstanceActor::new(
-                openssl::rsa::Rsa::private_key_from_pem(private_key.as_bytes()).unwrap(),
-                public,
-                &config.instance_domain,
-            )
-        }
-    };
+    //         let val = query!(
+    //             r#"INSERT INTO instance_actor
+    //                 (private_key, public_key_pem)
+    //             VALUES
+    //                 ($1, $2)
+    //             "#,
+    //             &private_key,
+    //             &public,
+    //         )
+    //         .execute(&pool)
+    //         .await;
+
+    //         val.unwrap();
+    //         InstanceActor::new(
+    //             openssl::rsa::Rsa::private_key_from_pem(private_key.as_bytes()).unwrap(),
+    //             public,
+    //             &config.instance_domain,
+    //         )
+    //     }
+    // };
 
     //-------------------------------------------------
 
@@ -217,9 +223,10 @@ async fn main() -> std::io::Result<()> {
             .service(shared_inbox)
             .service(private_inbox)
             .service(inspect_inbox)
-            .service(shared_outbox)
+            .service(create_post)
             .service(private_outbox)
             .service(get_object)
+            .service(get_instance_actor)
     })
     .bind((bind, port))?
     .run()

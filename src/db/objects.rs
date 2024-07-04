@@ -7,7 +7,8 @@ use url::Url;
 use crate::{
     activitystream_objects::{
         activities::Question,
-        core_types::ActivityStream,
+        core_types::{ActivityStream, RangeLinkExtendsObject},
+        link::LinkSimpleOrExpanded,
         object::{Object, ObjectType, ObjectWrapper},
     },
     db::actor_utilities::get_ap_actor_by_fedi_id,
@@ -34,11 +35,23 @@ pub enum InternalTypes {
     Question,
 }
 
+#[derive(Debug)]
 pub enum InsertErr {
     NoDomain,
     DbErr(sqlx::Error),
     NoPublishDate,
     NoAttribution,
+}
+
+impl std::fmt::Display for InsertErr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InsertErr::NoDomain => write!(f, "NoDomain"),
+            InsertErr::DbErr(x) => write!(f, "DbErr: {}", x),
+            InsertErr::NoPublishDate => write!(f, "NoPublishDate"),
+            InsertErr::NoAttribution => write!(f, "NoAttribution"),
+        }
+    }
 }
 
 ///inserts an object and returns its id
@@ -48,8 +61,8 @@ pub async fn create_new_object(
     domain: &str,
 ) -> Result<i64, InsertErr> {
     let val = match object {
-        DbObject::Object(x) => {
-            let Some(actor_fedi_id) = x.object.get_attributed_to() else {
+        DbObject::Object(obj_wrap) => {
+            let Some(actor_fedi_id) = obj_wrap.object.get_attributed_to() else {
                 return Err(InsertErr::NoAttribution);
             };
             let actor = get_ap_actor_by_fedi_id(actor_fedi_id.as_str(), &mut transaction).await;
@@ -57,7 +70,7 @@ pub async fn create_new_object(
                 .ap_user_id
                 .expect("actor fetched from the db did not contain an actor id");
 
-            let published = match x.object.published {
+            let published = match obj_wrap.object.published {
                 Some(x) => x.earliest().timestamp_millis(),
                 None => SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -66,7 +79,7 @@ pub async fn create_new_object(
             };
 
             let internal_type = serde_json::to_string(&InternalTypes::Object).unwrap();
-            let activitystream_type = serde_json::to_string(&x.type_field).unwrap();
+            let activitystream_type = serde_json::to_string(&obj_wrap.type_field).unwrap();
             let val = query!(
                 r#"INSERT INTO objects 
                             (domain, internal_type, activitystream_type, ap_user_id, published)
@@ -97,18 +110,24 @@ pub async fn create_new_object(
             .execute(&mut *transaction)
             .await;
 
+            let reply = match &obj_wrap.object.in_reply_to {
+                Some(x) => Some(x.get_id().as_str()),
+                None => None,
+            };
+
             let _result = query!(
                 r#"INSERT INTO activity_objects
-                            (obj_id, type_field, id, name, attributedTo, content, published)
+                            (obj_id, type_field, id, name, attributedTo, content, in_reply_to, published)
                         VALUES
-                            ($1, $2, $3, $4, $5, $6, $7)
+                            ($1, $2, $3, $4, $5, $6, $7, $8)
                         "#,
                 obj_id,
                 activitystream_type,
                 &id_link,
-                x.object.name,
+                obj_wrap.object.name,
                 actor_fedi_id.as_str(),
-                x.object.content,
+                obj_wrap.object.content,
+                reply,
                 published
             )
             .execute(&mut *transaction)
@@ -150,7 +169,18 @@ pub async fn get_object_by_db_id(
             .unwrap()
             .expect("item exists in objects as type object but does not exist in activity_objects");
 
-            let obj_type: ObjectType = serde_json::from_str(&object.type_field).expect("invalid object type stored in db");
+            let reply = match object.in_reply_to {
+                Some(x) => {
+                    let url = Url::parse(&x).expect("invalid reply to link stored in db");
+                    Some(RangeLinkExtendsObject::Link(Box::new(
+                        LinkSimpleOrExpanded::Simple(url),
+                    )))
+                }
+                None => None,
+            };
+
+            let obj_type: ObjectType =
+                serde_json::from_str(&object.type_field).expect("invalid object type stored in db");
 
             let output = Object::new(Url::parse(&object.id).expect("invalid url stored in db"))
                 .attributed_to_link(Some(
@@ -158,6 +188,7 @@ pub async fn get_object_by_db_id(
                 ))
                 .name(object.name)
                 .content(object.content)
+                .in_reply_to(reply)
                 .wrap(obj_type);
 
             Some(DbObject::Object(output))

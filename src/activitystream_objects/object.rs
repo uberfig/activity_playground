@@ -219,8 +219,16 @@ impl Object {
         self.content = content;
         self
     }
+    pub fn set_id(mut self, id: Url) -> Self {
+        self.id.id = id;
+        self
+    }
     pub fn published(mut self, published: Option<xsd_types::DateTime>) -> Self {
         self.published = published;
+        self
+    }
+    pub fn in_reply_to(mut self, in_reply_to: Option<RangeLinkExtendsObject>) -> Self {
+        self.in_reply_to = in_reply_to;
         self
     }
     pub fn wrap(self, obj_type: ObjectType) -> ObjectWrapper {

@@ -62,7 +62,6 @@ impl From<String> for PublicKey {
 pub struct Actor {
     #[serde(rename = "type")]
     pub type_field: ActorType,
-    #[serde(flatten)]
     pub preferred_username: String,
     pub extends_object: Object,
     pub public_key: PublicKey,
