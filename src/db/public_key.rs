@@ -42,7 +42,7 @@ pub async fn insert_actor_public_key<'e, 'c: 'e, E>(
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
-    let actor_id = actor.extends_object.id.as_str();
+    let actor_id = actor.id.as_str();
 
     insert_public_key(
         executor,

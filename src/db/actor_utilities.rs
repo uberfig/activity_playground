@@ -54,8 +54,8 @@ pub async fn insert_actor_into_ap_users<'e, 'c: 'e, E>(
 where
     E: 'e + sqlx::PgExecutor<'c>,
 {
-    let actor_id = actor.extends_object.id.as_str();
-    let Some(domain) = actor.extends_object.id.domain() else {
+    let actor_id = actor.id.as_str();
+    let Some(domain) = actor.id.domain() else {
         return Err(InsertErr::NoDomain);
     };
 
@@ -96,14 +96,15 @@ pub async fn get_ap_actor_by_db_id(id: i64, conn: &Data<DbConn>) -> Actor {
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 
-    let object = Object::new(url::Url::parse(&actor.id).unwrap());
+    // let object = Object::new(url::Url::parse(&actor.id).unwrap());
+    let id = url::Url::parse(&actor.id).unwrap();
 
     let public_key = get_actor_public_key(&conn.db, &actor.id).await.unwrap();
 
     Actor {
         type_field,
         preferred_username: actor.preferred_username,
-        extends_object: object,
+        id,
         public_key,
         inbox: actor.inbox,
         outbox: actor.outbox,
@@ -129,14 +130,16 @@ pub async fn get_ap_actor_by_fedi_id(
     let type_field: Result<ActorType, _> = serde_json::from_str(&actor.type_field);
     let type_field = type_field.expect("somehow an invalid actor type got into the db");
 
-    let object = Object::new(url::Url::parse(&actor.id).unwrap());
+    // let object = Object::new(url::Url::parse(&actor.id).unwrap());
+    let id = url::Url::parse(&actor.id).unwrap();
 
     let public_key = get_actor_public_key(&mut **conn, &actor.id).await.unwrap();
 
     Actor {
         type_field,
         preferred_username: actor.preferred_username,
-        extends_object: object,
+        // extends_object: object,
+        id,
         public_key,
         inbox: actor.inbox,
         outbox: actor.outbox,

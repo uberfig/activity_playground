@@ -22,7 +22,7 @@ impl Default for RangeLinkActor {
 impl RangeLinkActor {
     pub fn get_id(&self) -> &Url {
         match self {
-            RangeLinkActor::Actor(x) => &x.extends_object.id.id,
+            RangeLinkActor::Actor(x) => &x.id,
             RangeLinkActor::Link(x) => x,
         }
     }
@@ -64,9 +64,10 @@ impl From<String> for PublicKey {
 pub struct Actor {
     #[serde(rename = "type")]
     pub type_field: ActorType,
+    pub id: Url,
     pub preferred_username: String,
-    #[serde(flatten)]
-    pub extends_object: Object,
+    // #[serde(flatten)]
+    // pub extends_object: Object,
     pub public_key: PublicKey,
 
     pub inbox: String,
@@ -105,7 +106,7 @@ impl Actor {
         }
     }
     pub fn get_id(&self) -> &Url {
-        &self.extends_object.id.id
+        &self.id
     }
 }
 

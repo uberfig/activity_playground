@@ -172,7 +172,7 @@ impl ExtendsObject {
             ExtendsObject::Object(x) => &x.object.id.id,
             ExtendsObject::ExtendsIntransitive(x) => x.get_id(),
             ExtendsObject::ExtendsCollection(x) => todo!(),
-            ExtendsObject::Actor(x) => &x.extends_object.id.id,
+            ExtendsObject::Actor(x) => &x.id,
         }
     }
 }

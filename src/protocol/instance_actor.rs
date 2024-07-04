@@ -30,7 +30,8 @@ fn instance_actor_links(domain: &str) -> UserLinks {
 impl InstanceActor {
     pub fn new(private_key: Rsa<Private>, public_key_pem: String, domain: &str) -> InstanceActor {
         let links = instance_actor_links(domain);
-        let object = Object::new(Url::parse(&links.id).unwrap());
+        // let object = Object::new(Url::parse(&links.id).unwrap());
+        let id = Url::parse(&links.id).unwrap();
         let public_key = PublicKey {
             id: format!("{}#main-key", &links.id),
             owner: links.id,
@@ -40,7 +41,7 @@ impl InstanceActor {
         let actor = Actor {
             type_field: ActorType::Application,
             preferred_username: "bayou.internal".to_owned(),
-            extends_object: object,
+            id,
             public_key: public_key,
             inbox: links.inbox,
             outbox: links.outbox,
