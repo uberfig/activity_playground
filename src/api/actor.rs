@@ -36,7 +36,10 @@ pub async fn get_instance_actor(
 
     Ok(HttpResponse::Ok()
         .content_type("application/activity+json; charset=utf-8")
-        .body(serde_json::to_string(&cache.instance_actor.item.actor.clone().to_activitystream()).unwrap()))
+        .body(
+            serde_json::to_string(&cache.instance_actor.item.actor.clone().to_activitystream())
+                .unwrap(),
+        ))
     // Ok(HttpResponse::Ok()
     //     .content_type("application/activity+json; charset=utf-8")
     //     .body(serde_json::to_string(&cache.instance_actor.string_rep.as_ref().unwrap()).unwrap()))

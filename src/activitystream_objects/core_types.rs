@@ -182,8 +182,15 @@ impl ExtendsObject {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum LinkOrArray {
-    Single(Box<Link>),
-    Multiple(Vec<Link>),
+    Single(Box<LinkSimpleOrExpanded>),
+    Multiple(Vec<LinkSimpleOrExpanded>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum SimpleLinkOrArray {
+    Single(Url),
+    Multiple(Vec<Url>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

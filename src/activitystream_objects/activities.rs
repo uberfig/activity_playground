@@ -177,9 +177,15 @@ impl Activity {
     pub fn new_create(object: ObjectWrapper) -> Self {
         let intransitive = IntransitiveActivity {
             extends_object: Object::new(
-                Url::parse(&format!("{}/create", object.object.id.id.as_str())).unwrap(),
+                Url::parse(&format!("{}/activity", object.object.id.id.as_str())).unwrap(),
             ),
-            actor: RangeLinkActor::Link(object.object.get_attributed_to().unwrap().clone()),
+            actor: RangeLinkActor::Link(
+                object
+                    .object
+                    .get_attributed_to()
+                    .expect("trying to make a create for an object without attribution")
+                    .clone(),
+            ),
             target: None,
             result: None,
             origin: None,

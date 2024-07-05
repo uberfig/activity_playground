@@ -137,6 +137,7 @@ pub async fn verify_incoming(
 
     let object: Result<ActivityStream, _> = serde_json::from_str(&body);
     let Ok(object) = object else {
+        println!("bad message body:\n{}", body);
         return Err(RequestVerificationError::BodyDeserializeErr);
     };
 
@@ -178,14 +179,14 @@ pub async fn verify_incoming(
         return Err(RequestVerificationError::NoSignatureKey);
     };
     let key_id = key_id.replace('"', "");
-    println!("key id: \n{}\n\n", &key_id);
+    // println!("key id: \n{}\n\n", &key_id);
 
     let Some(signature) = signature_header.get("signature") else {
         return Err(RequestVerificationError::NoSignature);
     };
     let signature = signature.replace('"', "");
 
-    dbg!(&signature);
+    // dbg!(&signature);
 
     let fetched = authorized_fetch(
         &Url::parse(&key_id).unwrap(),
@@ -194,7 +195,7 @@ pub async fn verify_incoming(
     )
     .await;
 
-    dbg!(&fetched);
+    // dbg!(&fetched);
 
     let fetched = match fetched {
         Ok(x) => x,
@@ -226,7 +227,12 @@ pub async fn verify_incoming(
     // };
 
     if let Some(x) = object.get_owner() {
-        if actor.get_id().ne(x) {
+        if actor.get_id().domain().ne(&x.domain()) {
+            println!(
+                "KeyOwnerDoesNotMatch, \nobject owner: {} \nactor: {}",
+                x.as_str(),
+                actor.get_id()
+            );
             return Err(RequestVerificationError::KeyOwnerDoesNotMatch);
         }
     }

@@ -91,9 +91,12 @@ pub async fn private_inbox(
     // let path = "/users/test/inbox";
     // let x = request.cookie("example");
 
-    dbg!(&request);
+    // dbg!(&request);
+    
 
     let x = verify_incoming(&cache, &conn, request, body, &path, &state.instance_domain).await;
+
+    dbg!(&x);
 
     match x {
         Ok(x) => {

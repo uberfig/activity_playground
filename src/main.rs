@@ -4,7 +4,7 @@ use activity_playground::{
     activitystream_objects::{
         activities::{ChoiceType, IntransitiveActivity, Question, QuestionOption},
         core_types::ActivityStream,
-        object::Object,
+        object::{Object, ObjectType},
     },
     api::{
         // activities::{get_activity, get_object},
@@ -54,42 +54,95 @@ async fn get_profile_page(/*conn: Data<DbConn>, */ path: web::Path<String>) -> R
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env::set_var("RUST_BACKTRACE", "1");
+    // env::set_var("RUST_BACKTRACE", "1");
 
+    let test_obj = Object::new(Url::parse("https://test.com").unwrap())
+        .content(Some("hello".to_string()))
+        .published_milis(1720121686859)
+        .attributed_to_link(Some(Url::parse("https://test.com").unwrap()))
+        .to_public()
+        .wrap(ObjectType::Note)
+        .to_create_activitystream();
 
-    //     let test = Object::new(Url::parse("https://test.com/hi").unwrap())
-    //         .name(Some("hello".to_string()))
-    //         .to_activitystream();
-    //     let test = serde_json::to_string_pretty(&test).unwrap();
-    //     println!("{test}");
+    println!("{}", serde_json::to_string_pretty(&test_obj).unwrap());
 
-    //     let deserialized: ActivityStream = serde_json::from_str(
-    //         r#"{
-    //   "@context": [
-    //     "test1",
-    //     "test2"
-    //   ],
-    //   "type": "Object",
-    //   "id": "https://test.com/hi",
-    //   "name": "hello"
-    // }"#,
-    //     )
-    //     .unwrap();
+    let test_create = r#"
+    {
+        "@context": [
+          "https://www.w3.org/ns/activitystreams",
+          {
+            "ostatus": "http://ostatus.org#",
+            "atomUri": "ostatus:atomUri",
+            "inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+            "conversation": "ostatus:conversation",
+            "sensitive": "as:sensitive",
+            "toot": "http://joinmastodon.org/ns#",
+            "votersCount": "toot:votersCount"
+          }
+        ],
+        "id": "https://mastodon.social/users/ivy_test/statuses/112729853770309074/activity",
+        "type": "Create",
+        "actor": "https://mastodon.social/users/ivy_test",
+        "published": "2024-07-04T19:24:19Z",
+        "to": [
+          "https://www.w3.org/ns/activitystreams#Public"
+        ],
+        "cc": [
+          "https://mastodon.social/users/ivy_test/followers",
+          "https://place.ivytime.gay/users/superivy"
+        ],
+        "object": {
+          "id": "https://mastodon.social/users/ivy_test/statuses/112729853770309074",
+          "type": "Note",
+          "summary": null,
+          "inReplyTo": null,
+          "published": "2024-07-04T19:24:19Z",
+          "url": "https://mastodon.social/@ivy_test/112729853770309074",
+          "attributedTo": "https://mastodon.social/users/ivy_test",
+          "to": [
+            "https://www.w3.org/ns/activitystreams#Public"
+          ],
+          "cc": [
+            "https://mastodon.social/users/ivy_test/followers",
+            "https://place.ivytime.gay/users/superivy"
+          ],
+          "sensitive": false,
+          "atomUri": "https://mastodon.social/users/ivy_test/statuses/112729853770309074",
+          "inReplyToAtomUri": null,
+          "conversation": "tag:mastodon.social,2024-07-04:objectId=744789693:objectType=Conversation",
+          "content": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://place.ivytime.gay/users/superivy\" class=\"u-url mention\">@<span>superivy</span></a></span> test</p>",
+          "contentMap": {
+            "en": "<p><span class=\"h-card\" translate=\"no\"><a href=\"https://place.ivytime.gay/users/superivy\" class=\"u-url mention\">@<span>superivy</span></a></span> test</p>"
+          },
+          "attachment": [],
+          "tag": [
+            {
+              "type": "Mention",
+              "href": "https://place.ivytime.gay/users/superivy",
+              "name": "@superivy@place.ivytime.gay"
+            }
+          ],
+          "replies": {
+            "id": "https://mastodon.social/users/ivy_test/statuses/112729853770309074/replies",
+            "type": "Collection",
+            "first": {
+              "type": "CollectionPage",
+              "next": "https://mastodon.social/users/ivy_test/statuses/112729853770309074/replies?only_other_accounts=true&page=true",
+              "partOf": "https://mastodon.social/users/ivy_test/statuses/112729853770309074/replies",
+              "items": []
+            }
+          }
+        },
+        "signature": {
+          "type": "RsaSignature2017",
+          "creator": "https://mastodon.social/users/ivy_test#main-key",
+          "created": "2024-07-04T19:24:20Z",
+          "signatureValue": "limnBg+npozgyODp5mK6WRwMR9KBjo7K4bcfVs3wXauGs3C0R7u1ologX3eAR2f5I3WtyrOajY4PEjICAa3MdZ87+Ma6vRbv9he/kkJqbbdiPQMorZt8wybkoTsEGerohcFJviWsz0HbNyxhX2y+TR4TGHqTCYjzrErXakILXdAQ3AGbZe8Ay2fePj0Mxzl4hb42ytdrbRlSBRXcFoT6gwEiJpDXGXbJUl5EI3vFtdAp8Jzaoe6le2yMXsF5UjD8trOySNfY9hs2ct7EeaEg+B5MJ38dlMV0tDpr+iqcQ9mTAYKcQtDb92mWpJLQX5U4tPl60BzSSaQuHa5Y7IpTWg=="
+        }
+      }"#;
 
-    // let test = Question {
-    //     type_field: activity_playground::activitystream_objects::activities::QuestionType::Question,
-    //     extends_intransitive: IntransitiveActivity {
-    //         type_field: todo!(),
-    //         extends_object: todo!(),
-    //         actor: todo!(),
-    //         target: todo!(),
-    //         result: todo!(),
-    //         origin: todo!(),
-    //         instrument: todo!(),
-    //     },
-    //     options: todo!(),
-    //     closed: todo!(),
-    // };
+    let deserialized: ActivityStream = serde_json::from_str(&test_create).unwrap();
+    dbg!(deserialized);
 
     let deserialized: ActivityStream = serde_json::from_str(
         r#"{
@@ -212,13 +265,13 @@ async fn main() -> std::io::Result<()> {
 
     //
 
-    let test = authorized_fetch(
-        &Url::parse("https://mastodon.social/users/ivy_test").unwrap(),
-        &cache.instance_actor.item.key_id,
-        &cache.instance_actor.item.private_key,
-    )
-    .await;
-    dbg!(&test);
+    // let test = authorized_fetch(
+    //     &Url::parse("https://mastodon.social/users/ivy_test").unwrap(),
+    //     &cache.instance_actor.item.key_id,
+    //     &cache.instance_actor.item.private_key,
+    // )
+    // .await;
+    // dbg!(&test);
     // test.unwrap();
     //
 

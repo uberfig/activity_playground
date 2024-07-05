@@ -8,7 +8,7 @@ use super::{
     collections::ExtendsCollection,
     core_types::{
         ActivityStream, Context, ContextWrap, ExtendsObject, LinkOrArray, RangeLinkExtendsObject,
-        RangeLinkObjOrArray,
+        RangeLinkObjOrArray, SimpleLinkOrArray,
     },
 };
 
@@ -127,9 +127,7 @@ pub struct Object {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    //TODO
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attachment: Option<String>,
+    
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attributed_to: Option<RangeLinkActor>,
     // #[serde(skip_serializing_if = "Option::is_none")]
@@ -144,6 +142,43 @@ pub struct Object {
     /// Identifies the entity (e.g. an application) that generated the object
     pub generator: Option<String>,
 
+    
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_reply_to: Option<RangeLinkExtendsObject>,
+    
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replies: Option<Box<ExtendsCollection>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub published: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to: Option<SimpleLinkOrArray>,
+
+
+    //TODO
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attachment: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag: Option<SimpleLinkOrArray>,
+
+    
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<LinkOrArray>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
 
@@ -151,46 +186,12 @@ pub struct Object {
     pub image: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub in_reply_to: Option<RangeLinkExtendsObject>,
-
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // pub location: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub preview: Option<RangeLinkExtendsObject>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub published: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub replies: Option<Box<ExtendsCollection>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_time: Option<xsd_types::DateTime>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_time: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tag: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated: Option<xsd_types::DateTime>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<LinkOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub to: Option<RangeLinkObjOrArray>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Identifies an Object that is part of the private primary audience of this Object.
-    pub bto: Option<RangeLinkObjOrArray>,
+    pub bto: Option<SimpleLinkOrArray>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Identifies an Object that is part of the public secondary audience of this Object.
-    pub cc: Option<RangeLinkObjOrArray>,
+    pub cc: Option<SimpleLinkOrArray>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Identifies one or more Objects that are part of the private secondary audience of this Object.
@@ -198,6 +199,11 @@ pub struct Object {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
+
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preview: Option<RangeLinkExtendsObject>,
 }
 
 impl Object {
@@ -252,11 +258,7 @@ impl Object {
         self
     }
     pub fn to_public(mut self) -> Self {
-        self.to = Some(RangeLinkObjOrArray::Single(RangeLinkExtendsObject::Link(
-            Box::new(super::link::LinkSimpleOrExpanded::Simple(
-                Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap(),
-            )),
-        )));
+        self.to = Some(SimpleLinkOrArray::Multiple(vec![Url::parse("https://www.w3.org/ns/activitystreams#Public").unwrap()]));
         self
     }
     pub fn wrap(self, obj_type: ObjectType) -> ObjectWrapper {
